@@ -1,0 +1,119 @@
+import { Injectable, Logger, OnModuleInit } from "@nestjs/common";
+import { Cron, SchedulerRegistry } from "@nestjs/schedule";
+import { QuotesSyncService } from '../quotes/quotes.sync.service';
+import { TasksRule } from './task.rules';
+import { WeatherSyncService } from "../weather/weather.sync.service";
+import { WeatherService } from "../weather/weather.service";
+import { CronJob } from 'cron';
+import { NotificationService } from "../notification/notification.service";
+
+@Injectable()
+export class TasksService implements OnModuleInit {
+  private readonly logger = new Logger(TasksService.name);
+  private readonly rules: TasksRule[] = [];
+
+  constructor(
+    private readonly schedulerRegistry: SchedulerRegistry,
+    private readonly quotesSyncService: QuotesSyncService,
+    private readonly weatherSyncService: WeatherSyncService,
+    private readonly weatherService: WeatherService,
+    private readonly notificationService: NotificationService, // Inject notification service
+  ) {
+    // Add default rules during initialization
+    this.addRule(
+      new TasksRule(
+        'Sync Daily Quotes',
+        '0 0 * * *', // Every midnight
+        this.syncDailyQuotes.bind(this),
+      ),
+    );
+
+    this.addRule(
+      new TasksRule(
+        'Send Daily Quote Notification',
+        '0 9 * * *', // Every day at 9 AM
+        this.sendDailyNotifications.bind(this),
+      ),
+    );
+
+    // Relate to weather
+    this.addRule(
+      new TasksRule(
+        'Sync Weather',
+        '0 */3 * * *', // Every 3 hours
+        this.syncWeather.bind(this),
+      ),
+    );
+  }
+
+  onModuleInit() {
+    // Schedule all rules on initialization
+    this.rules.forEach((rule) => this.scheduleRule(rule));
+  }
+
+  // Add a new rule
+  addRule(rule: TasksRule) {
+    this.rules.push(rule);
+  }
+
+  // Schedule a rule dynamically
+  private scheduleRule(rule: TasksRule) {
+    const job = new CronJob(rule.cronExpression, async () => {
+      this.logger.log(`Executing rule: ${rule.ruleName}`);
+      await rule.execute();
+    });
+
+    this.schedulerRegistry.addCronJob(rule.ruleName, job);
+    job.start();
+    this.logger.log(`Scheduled rule: ${rule.ruleName} with cron: ${rule.cronExpression}`);
+  }
+
+  // Sync daily quotes
+  async syncDailyQuotes() {
+    this.logger.log('Syncing daily quotes...');
+    await this.quotesSyncService.syncDailyQuotes();
+    this.logger.log('Finished syncing daily quotes.');
+  }
+
+  // Sync weather
+  async syncWeather() {
+    this.logger.log('Syncing weather data...');
+    const location = 'Hanoi'; // Hardcoded for now, can be dynamic later
+    try {
+      const weatherData = await this.weatherSyncService.fetchWeatherData(location);
+      await this.weatherService.updateWeatherData(location, weatherData);
+      this.logger.log('Weather data synced successfully');
+    } catch (error) {
+      this.logger.error('Failed to sync weather data', error.stack);
+    }
+  }
+
+  // Send daily notifications
+  async sendDailyNotifications() {
+    this.logger.log('Sending daily quote notification via WebSocket');
+    await this.notificationService.sendNotification({
+      type: 'websocket',
+      target: 'dailyNotification',
+      message: 'Here is your daily motivational quote!',
+    });
+  }
+
+  async sendUserRegistrationNotification(email: string): Promise<void> {
+    this.logger.log(`Sending success notification to ${email}`);
+    await this.notificationService.sendNotification({
+      type: 'email',
+      target: email,
+      message: 'Your account has been successfully created!',
+    });
+  }
+
+  async sendWeatherNotification(weatherData: any) {
+    this.logger.log('Sending weather update notification via WebSocket');
+    await this.notificationService.sendNotification({
+      type: 'websocket',
+      target: 'weatherNotification',
+      message: `Today's weather: ${weatherData.temperature}°C and ${weatherData.condition}`,
+      additionalData: weatherData,
+    });
+  }
+}
