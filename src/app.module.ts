@@ -5,6 +5,7 @@ import { UserModule } from "./modules/user/user.module";
 import { ValidationModule } from "./modules/email-validation/validation.module";
 import * as dotenv from "dotenv";
 import { TracingLoggerMiddleware } from "./modules/tracing-logger/tracing-logger.middleware";
+import { DefaultHabitsModule } from "./modules/default_habits/default_habits.module";
 
 dotenv.config();
 
@@ -18,6 +19,7 @@ dotenv.config();
       validatePublicAPI: process.env.API_VALIDATE_EMAIL || "",
       isPublic: true,
     }),
+    DefaultHabitsModule,
   ],
 })
 export class AppModule implements NestModule {

@@ -17,8 +17,6 @@ export class DefaultHabitsController {
       frequency: createDefaultHabitsDto.frequency,
       goal: createDefaultHabitsDto.goal,
       package_score: createDefaultHabitsDto.package_score,
-      streak: createDefaultHabitsDto.streak,
-      status: createDefaultHabitsDto.status,
     };
   }
 }

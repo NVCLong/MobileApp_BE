@@ -3,9 +3,7 @@ export class CreateDefault_HabitsDto {
   type: string;
   default_score: number;
   category: string;
-  frequency: string;
-  goal: string;
+  frequency: number;
+  goal: number;
   package_score: number;
-  streak: number;
-  status: string;
 }

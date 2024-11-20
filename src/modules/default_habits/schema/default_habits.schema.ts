@@ -15,26 +15,21 @@ export class Default_Habits {
   @Prop()
   type: string;
 
-  @Prop()
+  @Prop({default: 10})
   default_score: number;
 
   @Prop()
   category: string;
 
   @Prop()
-  frequency: string;
+  frequency: number;
 
   @Prop()
-  goal: string;
+  goal: number;
 
-  @Prop()
+  @Prop({default: 10})
   package_score: number;
 
-  @Prop()
-  streak: number;
-
-  @Prop()
-  status: string;
 }
 
 export const Default_habitsSchema = SchemaFactory.createForClass(Default_Habits);
