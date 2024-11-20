@@ -3,7 +3,7 @@ import { HttpService } from '@nestjs/axios';
 import { QuotesService } from './quotes.service';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { User } from "../modules/user/schemas/user.schema";
+import { User } from "../user/schemas/user.schema";
 import { lastValueFrom } from "rxjs";
 
 

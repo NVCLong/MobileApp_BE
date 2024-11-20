@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { WeatherService } from './weather.service';
-import { HttpService } from "../shared/http.service";
+import { HttpService } from "../../shared/http.service";
 
 
 @Injectable()

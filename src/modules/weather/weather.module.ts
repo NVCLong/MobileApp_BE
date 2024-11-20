@@ -5,7 +5,7 @@ import { Weather, WeatherSchema } from "./schemas/weather.schema";
 import { MongooseModule } from "@nestjs/mongoose";
 import { HttpModule } from "@nestjs/axios";
 import { WeatherSyncService } from "./weather.sync.service";
-import { HttpService } from "../shared/http.service";
+import { HttpService } from "../../shared/http.service";
 
 @Module({
   imports:[

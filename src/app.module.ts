@@ -5,7 +5,7 @@ import { UserModule } from "./modules/user/user.module";
 import { ValidationModule } from "./modules/email-validation/validation.module";
 import * as dotenv from "dotenv";
 import { TracingLoggerMiddleware } from "./modules/tracing-logger/tracing-logger.middleware";
-import { QuotesModule } from './quotes/quotes.module';
+import { QuotesModule } from './modules/quotes/quotes.module';
 import { TasksModule } from './tasks/tasks.module';
 import { ScheduleModule } from "@nestjs/schedule";
 import { WeatherModule } from './weather/weather.module';
