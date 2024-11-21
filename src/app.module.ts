@@ -7,10 +7,10 @@ import * as dotenv from "dotenv";
 import { TracingLoggerMiddleware } from "./modules/tracing-logger/tracing-logger.middleware";
 import { DefaultHabitsModule } from "./modules/default_habits/default_habits.module";
 import { QuotesModule } from './modules/quotes/quotes.module';
-import { TasksModule } from './tasks/tasks.module';
+import { TasksModule } from './modules/tasks/tasks.module';
 import { ScheduleModule } from "@nestjs/schedule";
-import { WeatherModule } from './weather/weather.module';
-import { NotificationModule } from './notification/notification.module';
+import { WeatherModule } from './modules/weather/weather.module';
+import { NotificationModule } from './modules/notification/notification.module';
 
 dotenv.config();
 
