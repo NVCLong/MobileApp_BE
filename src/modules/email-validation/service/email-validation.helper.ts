@@ -2,6 +2,8 @@ import { BadRequestException, Inject, Injectable } from "@nestjs/common";
 import { TracingLogger } from "../../tracing-logger/tracing-logger.service";
 import { AxiosInstance } from "axios";
 import axios from 'axios'
+import * as https from "node:https";
+import * as cheerio from 'cheerio'
 
 @Injectable()
 export class EmailValidationHelper {
@@ -45,4 +47,10 @@ export class EmailValidationHelper {
     this.logger.debug(`[CHECKING EMAIL] - Validate real email with result ${allChecksPassed}`);
     return allChecksPassed;
   }
+}
+
+export const commonBody = {
+  __EVENTTARGET: "",
+  __EVENTARGUMENT: "",
+  __VIEWSTATEGENERATOR: "CA0B0334",
 }

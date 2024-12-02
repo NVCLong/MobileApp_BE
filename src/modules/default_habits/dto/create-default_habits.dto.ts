@@ -1,9 +1,31 @@
-export class CreateDefault_HabitsDto {
+import { IsEnum, IsNotEmpty, IsNumber, IsOptional, IsString } from "class-validator";
+import { HabitActionType, HabitType, TargetUnit } from "../utils/habit.constant";
+
+export class CreateDefaultHabitsDto {
+  @IsNotEmpty()
+  @IsString()
   name: string;
-  type: string;
+
+  @IsNotEmpty()
+  @IsEnum(HabitActionType)
+  type: HabitActionType;
+
+  @IsNumber()
   default_score: number;
-  category: string;
+
+  @IsOptional()
+  @IsString()
+  description?: string;
+
+  @IsNotEmpty()
+  @IsNumber()
   frequency: number;
+
+  @IsNotEmpty()
+  @IsNumber()
   goal: number;
-  package_score: number;
+
+  @IsOptional()
+  @IsEnum(TargetUnit)
+  targetUnit?: TargetUnit;
 }
