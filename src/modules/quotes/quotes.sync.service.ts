@@ -16,37 +16,40 @@ export class QuotesSyncService {
   ) {}
 
   // Sync daily quotes for all users
-  async syncDailyQuotes() {
+  async syncWeeklyQuotes() {
     try {
-      const users = await this.userModel.find().exec();
-      if (users.length === 0) {
-        console.log('No users found for daily quote sync.');
+
+      const apiUrl = "https://zenquotes.io/api/random";
+      const quoteData = []
+
+      for(let i = 0; i < 7 ; i++){
+        const response = await lastValueFrom(this.httpService.get(apiUrl));
+
+        const [quote] = Array.isArray(response.data) ? response.data : [];
+        if (quote && quote.q && quote.a) {
+          quoteData.push({
+            content: quote.q,
+            author: quote.a,
+            htmlContent: quote.h || null,
+          });
+        }
+      }
+
+      if (quoteData.length < 7) {
+        console.error('Not enough valid quotes data from API.');
         return;
       }
 
-      const apiUrl = 'https://zenquotes.io/api/random';
-      const response = await lastValueFrom(this.httpService.get(apiUrl));
-
-      const [quoteData] = Array.isArray(response.data) ? response.data : [];
-      if (!quoteData || !quoteData.q || !quoteData.a) {
-        console.error('Invalid quote data from API:', response.data);
-        return;
-      }
-
-      const { q, a, h } = quoteData;
-
-      const quotesToUpdate = users.map(user => ({
-        updateOne: {
-          filter: { userId: user._id.toString() },
-          update: {
-            content: q,
-            author: a,
-            htmlContent: h || null, // Use `h` if available
-            userId: user._id.toString(),
+      const quotesToUpdate = [
+        {
+          insertOne: {
+            filter: {},
+            document: {
+              weeklyQuotes: quoteData,
+            }
           },
-          upsert: true, // Create if not exists
         },
-      }));
+      ]
 
       // Perform bulk write to optimize database operations
       const result = await this.quotesService.bulkUpdateQuotes(quotesToUpdate);
