@@ -22,9 +22,9 @@ export class TasksService implements OnModuleInit {
     // Add default rules during initialization
     this.addRule(
       new TasksRule(
-        'Sync Daily Quotes',
-        '0 0 * * *', // Every midnight
-        this.syncDailyQuotes.bind(this),
+        'Sync Weekly Quotes',
+        '0 0 * * *', // Every sunday midnight
+        this.syncWeeklyQuotes.bind(this),
       ),
     );
 
@@ -69,9 +69,9 @@ export class TasksService implements OnModuleInit {
   }
 
   // Sync daily quotes
-  async syncDailyQuotes() {
+  async syncWeeklyQuotes() {
     this.logger.log('Syncing daily quotes...');
-    await this.quotesSyncService.syncDailyQuotes();
+    await this.quotesSyncService.syncWeeklyQuotes();
     this.logger.log('Finished syncing daily quotes.');
   }
 
@@ -115,5 +115,18 @@ export class TasksService implements OnModuleInit {
       message: `Today's weather: ${weatherData.temperature}°C and ${weatherData.condition}`,
       additionalData: weatherData,
     });
+  }
+
+  // Manually trigger the weekly quotes update
+  async triggerWeeklyQuotesUpdate() {
+    this.logger.log('Manually triggering weekly quotes update...');
+    await this.syncWeeklyQuotes();
+    this.logger.log('Manual weekly quotes update completed.');
+  }
+
+  async triggerWeatherUpdate() {
+    this.logger.log('Manually triggering weather update...');
+    await this.syncWeather();
+    this.logger.log('Manual weather update completed.');
   }
 }

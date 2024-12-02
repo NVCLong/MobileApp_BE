@@ -14,7 +14,7 @@ export class WeatherSyncService {
 
   async fetchWeatherData(location: string): Promise<any> {
     try {
-      const apiUrl = `https://api.weatherapi.com/v1/current.json?key=f529241bc32e403eb3b135637241811&q=${location}&days=3&lang=vi`;
+      const apiUrl = `https://api.weatherapi.com/v1/current.json?key=f529241bc32e403eb3b135637241811&q=${location}&days=3&lang=en`;
       const response = await this.httpService.get(apiUrl)
       const { location: loc, current } = response;
 

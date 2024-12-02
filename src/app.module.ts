@@ -11,6 +11,7 @@ import { TasksModule } from './modules/tasks/tasks.module';
 import { ScheduleModule } from "@nestjs/schedule";
 import { WeatherModule } from './modules/weather/weather.module';
 import { NotificationModule } from './modules/notification/notification.module';
+import { HabitTrackingModule } from './modules/habit-tracking/habit-tracking.module';
 
 dotenv.config();
 
@@ -30,6 +31,7 @@ dotenv.config();
     ScheduleModule.forRoot(),
     WeatherModule,
     NotificationModule,
+    HabitTrackingModule,
   ],
 })
 export class AppModule implements NestModule {
