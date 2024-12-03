@@ -17,6 +17,6 @@ export enum TargetUnit{
 }
 
 export enum HabitType {
-  Custom= 'Custom_Habit',
-  Default = 'Default_Habit',
+  Custom= 'CustomHabit',
+  Default = 'DefaultHabit',
 }

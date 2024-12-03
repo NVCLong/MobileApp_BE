@@ -38,7 +38,7 @@ export class UserService {
       this.logger.debug("[CreateUser] Email validation failed");
       throw new BadRequestException("Email validation failed");
     }
-    this.checkExistEmail(email);
+    await this.checkExistEmail(email);
     const res= await this.userModel.create({
       userName: request.name,
       userEmail: request.email,
@@ -54,9 +54,9 @@ export class UserService {
     })
   }
 
-  private checkExistEmail(email){
+  private async checkExistEmail(email){
     this.logger.debug("[CheckExistEmail] CheckExistEmail called");
-    const user = this.userModel.findOne({userEmail:email});
+    const user =  await this.userModel.findOne({userEmail:email});
     if(!user){
       this.logger.debug("[CheckExistEmail] User not found and email does not exist");
     }
