@@ -45,6 +45,8 @@ export enum DaysOfWeek {
   SUNDAY = 'Sunday',
 }
 
+
+// habit daily plan is contain habit type => Custom, Default
 export class HabitDailyPlan {
   type: HabitType;
   data: Types.ObjectId;
