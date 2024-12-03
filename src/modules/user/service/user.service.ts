@@ -59,6 +59,7 @@ export class UserService {
     const user =  await this.userModel.findOne({userEmail:email});
     if(!user){
       this.logger.debug("[CheckExistEmail] User not found and email does not exist");
+      return;
     }
     throw new BadRequestException("Email validation failed - Email is used by another user");
   }
