@@ -25,6 +25,24 @@ export class UsersController {
     }
   }
 
+  // @Post('updateStreak')
+  // async updateStreak(@Body() request: UpdateStreakDTO): Promise<any> {
+  //   const user = await this.userService.getUserById(request.userId);
+  //
+  //   try{
+  //     this.logger.log("Receive update streak request");
+  //
+  //     if(request.purpose === "reset"){
+  //       return await this.userService.resetStreak(user, request.streak);
+  //     }else if(request.purpose === "update"){
+  //       return await this.userService.updateStreaks(user, request.streak);
+  //     }
+  //   }catch(error){
+  //     this.logger.error("Error updating streak");
+  //     throw error;
+  //   }
+  // }
+
   @Post('/entryForm/:id')
   async submitEntryForm(@Body() request: UserInfoRequest, @Param('id') userId: number): Promise<any> {
     try{

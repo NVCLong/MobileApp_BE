@@ -1,7 +1,7 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { HydratedDocument, Types } from 'mongoose';
 import { User } from "./user.schema";
-import { UserHabitTracking } from "../../default_habits_value/schema/user-tracking-info.schema";
+
 import { HabitType } from "../../default_habits/utils/habit.constant";
 
 export type HabitPlanDocument = HydratedDocument<HabitPlan>;

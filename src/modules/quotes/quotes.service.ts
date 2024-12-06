@@ -25,4 +25,8 @@ export class QuotesService {
   async bulkUpdateQuotes(operations: any[]) {
     return this.quoteModel.bulkWrite(operations);
   }
+
+  async getLatestQuotes(limit: number): Promise<Quote[]> {
+    return this.quoteModel.find().sort({ createdAt: -1 }).limit(limit).exec();
+  }
 }

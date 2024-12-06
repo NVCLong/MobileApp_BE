@@ -38,4 +38,9 @@ export class Default_HabitsService {
       message: 'Create success'
     }
   }
+
+  async getHabitById(habitId: string): Promise<DefaultHabits> {
+    this.logger.debug("[GetHabitById] GetHabitById called");
+    return this.defaultHabitsModel.findById(habitId);
+  }
 }
