@@ -29,6 +29,7 @@
     "@nestjs/platform-express": "^10.0.0",
     "@nestjs/platform-socket.io": "^10.4.8",
     "@nestjs/schedule": "^4.1.1",
+    "@nestjs/swagger": "^8.1.0",
     "@nestjs/websockets": "^10.4.8",
     "axios": "^1.7.7",
     "cheerio": "^1.0.0",
@@ -43,6 +44,7 @@
     "reflect-metadata": "^0.2.0",
     "rxjs": "^7.8.1",
     "socket.io": "^4.8.1",
+    "swagger-ui-express": "^5.0.1",
     "uuid": "^11.0.3"
   },
   "devDependencies": {

@@ -13,6 +13,7 @@ import { Hobby, Sport, UserSupportWorkField } from "../utils/user.constant";
 import { GetUserInfoResponse } from "../dtos/get-user-info.response.dto";
 import { HabitCategory } from "../../default_habits/schema/habit-categories.schema";
 import { DefaultHabits } from "../../default_habits/schema/default_habits.schema";
+import { HabitPlan, HabitPlanDocument } from "../schemas/user-habit-plan.schema";
 
 @Injectable()
 export class UserService {
@@ -20,8 +21,10 @@ export class UserService {
     @InjectModel(User.name) private readonly userModel: Model<User>,
     @InjectModel(UserInformation.name) private readonly userInformationModel: Model<UserInformation>,
     @InjectModel(HabitCategory.name) private readonly habitCategoryModel: Model<HabitCategory>,
+    @InjectModel(HabitPlan.name) private readonly habitPlanModel: Model<HabitPlanDocument>,
     private readonly logger: TracingLogger,
     private readonly emailValidationHelper: EmailValidationHelper,
+
   ) {
     this.logger.setContext(UserService.name)
   }
@@ -47,14 +50,24 @@ export class UserService {
 
     //TODO
     // add notification when user register success
-    
+
     return plainToInstance(CreateUserResult,{
       userId: res.id,
       status: HttpStatus.CREATED
     })
   }
 
-  private async checkExistEmail(email){
+  async getUserById(userId: string): Promise<User> {
+    this.logger.debug("[GetUserById] GetUserById called");
+    const user = await this.userModel.findById(userId);
+
+    if(!user){
+      throw new BadRequestException("User not found");
+    }
+    return user;
+  }
+
+  private async checkExistEmail(email) {
     this.logger.debug("[CheckExistEmail] CheckExistEmail called");
     const user =  await this.userModel.findOne({userEmail:email});
     if(!user){
@@ -178,5 +191,18 @@ export class UserService {
 
   private getLastPlan(userId: string){
 
+  }
+
+  async getHabitPlanById(habitPlanId: string){
+    return this.habitPlanModel.findById(habitPlanId);
+  }
+
+  async getHabitPlansByHabitId(habitId: string){
+    return this.habitPlanModel.find({habitId});
+  }
+
+
+  async updateUserStreak(userId: Types.ObjectId, currentStreak: number, longestStreak: number) {
+    return this.userModel.updateOne({ _id: userId }, { currentStreak, longestStreak });
   }
 }

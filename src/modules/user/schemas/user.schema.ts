@@ -12,6 +12,12 @@ export class User {
   @Prop({required: false})
   age: number;
 
+  @Prop({default: 0})
+  currentStreak: number;
+
+  @Prop({default: 0})
+  longestStreak: number;
+
   _id: Types.ObjectId;
 }
 

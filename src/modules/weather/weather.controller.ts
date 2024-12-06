@@ -2,7 +2,7 @@ import { Controller, Get, Param } from "@nestjs/common";
 import { WeatherService } from './weather.service';
 import { Weather } from "./schemas/weather.schema";
 
-@Controller()
+@Controller("weather")
 export class WeatherController {
   constructor(private readonly weatherService: WeatherService) {}
 
