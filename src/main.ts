@@ -24,9 +24,9 @@ async function bootstrap() {
 
   app.use(helmet());
   app.use(cookieParser());
-  app.use(TracingLoggerMiddleware);
 
   await app.listen(process.env.PORT ?? 3000);
+  app.use(TracingLoggerMiddleware);
 
   const logger = new Logger();
   logger.log("Application listen on http://localhost:3000/api ");
