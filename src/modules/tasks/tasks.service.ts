@@ -38,13 +38,13 @@ export class TasksService implements OnModuleInit {
       ),
     );
 
-    this.addRule(
-      new TasksRule(
-        'Auto generate habit plan for each user',
-        '*/10 * * * * *',
-        this.autoReGeneratePlan.bind(this),
-      )
-    )
+    // this.addRule(
+    //   new TasksRule(
+    //     'Auto generate habit plan for each user',
+    //     '*/10 * * * * *',
+    //     this.autoReGeneratePlan.bind(this),
+    //   )
+    // )
 
     // Relate to weather
     this.addRule(
