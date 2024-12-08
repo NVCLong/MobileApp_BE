@@ -38,13 +38,13 @@ export class TasksService implements OnModuleInit {
       ),
     );
 
-    // this.addRule(
-    //   new TasksRule(
-    //     'Auto generate habit plan for each user',
-    //     '*/10 * * * * *',
-    //     this.autoReGeneratePlan.bind(this),
-    //   )
-    // )
+    this.addRule(
+      new TasksRule(
+        'Auto generate habit plan for each user',
+        '0 0 * * 0',
+        this.autoReGeneratePlan.bind(this),
+      )
+    )
 
     // Relate to weather
     this.addRule(
@@ -109,6 +109,7 @@ export class TasksService implements OnModuleInit {
   }
 
   async autoReGeneratePlan(){
+    this.logger.debug(`Start re-generate habit plan for all user`)
     await this.userService.processReGenerate();
   }
 
