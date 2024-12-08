@@ -20,3 +20,5 @@ export enum HabitType {
   Custom= 'CustomHabit',
   Default = 'DefaultHabit',
 }
+
+export const maximumHabit = "maximumDefaultGenerateHabit";

@@ -6,6 +6,7 @@ import { WeatherSyncService } from "../weather/weather.sync.service";
 import { WeatherService } from "../weather/weather.service";
 import { CronJob } from 'cron';
 import { NotificationService } from "../notification/notification.service";
+import { UserService } from "../user/service/user.service";
 
 @Injectable()
 export class TasksService implements OnModuleInit {
@@ -18,6 +19,7 @@ export class TasksService implements OnModuleInit {
     private readonly weatherSyncService: WeatherSyncService,
     private readonly weatherService: WeatherService,
     private readonly notificationService: NotificationService, // Inject notification service
+    private readonly userService: UserService,
   ) {
     // Add default rules during initialization
     this.addRule(
@@ -35,6 +37,14 @@ export class TasksService implements OnModuleInit {
         this.sendDailyNotifications.bind(this),
       ),
     );
+
+    // this.addRule(
+    //   new TasksRule(
+    //     'Auto generate habit plan for each user',
+    //     '*/10 * * * * *',
+    //     this.autoReGeneratePlan.bind(this),
+    //   )
+    // )
 
     // Relate to weather
     this.addRule(
@@ -96,6 +106,10 @@ export class TasksService implements OnModuleInit {
       target: 'dailyNotification',
       message: 'Here is your daily motivational quote!',
     });
+  }
+
+  async autoReGeneratePlan(){
+    await this.userService.processReGenerate();
   }
 
   async sendUserRegistrationNotification(email: string): Promise<void> {

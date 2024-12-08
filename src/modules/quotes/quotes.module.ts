@@ -7,10 +7,11 @@ import { Quote, QuotesSchema } from "./quotes.schema";
 import { UserModule } from "../user/user.module";
 import { HttpModule } from '@nestjs/axios';
 import { HttpService } from "../../shared/http.service";
+import { User, UserSchema } from "../user/schemas/user.schema";
 
 @Module({
   imports: [
-    MongooseModule.forFeature([{ name: Quote.name, schema: QuotesSchema }]),
+    MongooseModule.forFeature([{ name: Quote.name, schema: QuotesSchema}, {name: User.name, schema: UserSchema}]),
     UserModule,
     HttpModule
   ],

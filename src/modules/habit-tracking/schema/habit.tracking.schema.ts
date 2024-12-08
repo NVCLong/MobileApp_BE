@@ -10,6 +10,8 @@ export class HabitTracking {
   // @Prop({type: Types.ObjectId, ref: HabitPlan.name ,required: true})
   // habitPlanId: Types.ObjectId;
 
+  _id: Types.ObjectId;
+
   @Prop({ type: MongooseSchema.Types.ObjectId, required: true })
   habitId : MongooseSchema.Types.ObjectId;
 

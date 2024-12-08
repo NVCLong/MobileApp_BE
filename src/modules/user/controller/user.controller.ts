@@ -70,7 +70,7 @@ export class UsersController {
   }
 
   @Get('/createHabitPlan/:id')
-  async getDefaultHabit(@Param('id') id: string): Promise<any> {
+  async createHabitPlan(@Param('id') id: string): Promise<any> {
     try{
       this.logger.log("Receive getting default habit");
       return await this.userService.createHabitPlanByUserInfo(id);
