@@ -1,3 +1,5 @@
+import { DefaultHabits } from "../modules/default_habits/schema/default_habits.schema";
+
 export const toBoolean = ( value: any ) => {
   if (typeof value === 'string') {
     const lowerValue = value.toLowerCase();

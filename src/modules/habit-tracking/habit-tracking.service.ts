@@ -1,4 +1,11 @@
-import { BadRequestException, Injectable, Logger, NotFoundException, UnauthorizedException } from "@nestjs/common";
+import {
+  BadRequestException,
+  forwardRef, Inject,
+  Injectable,
+  Logger,
+  NotFoundException,
+  UnauthorizedException
+} from "@nestjs/common";
 import { InjectModel } from "@nestjs/mongoose";
 import { HabitTracking, HabitTrackingDocument } from "./schema/habit.tracking.schema";
 import { Model, Types } from "mongoose";
@@ -18,6 +25,7 @@ export class HabitTrackingService {
   private readonly logger = new Logger(HabitTrackingService.name);
   constructor(
     @InjectModel(HabitTracking.name) private habitTrackingModel: Model<HabitTrackingDocument>,
+    @Inject(forwardRef(() => UserService))
     private readonly userService: UserService,
     private readonly defaultHabitsService: Default_HabitsService,
   ) {}
@@ -201,6 +209,16 @@ export class HabitTrackingService {
 
     await habitTracking.save();
     return habitTracking;
+  }
+
+  async createHabitTracking(createDto: CreateHabitTrackingDto): Promise<HabitTracking> {
+    const { userId, habitId, progress } = createDto;
+    const habit = await this.habitTrackingModel.create({
+      userId,
+      habitId,
+      progress
+    })
+    return habit;
   }
 
   async updateUserStreak(
