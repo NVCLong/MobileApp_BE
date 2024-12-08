@@ -11,6 +11,9 @@ import { DocumentBuilder, SwaggerModule } from "@nestjs/swagger";
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
+  // const tasksService = app.get(TasksService);
+  // await tasksService.syncWeather();
+
   app.useWebSocketAdapter(new IoAdapter(app));
   app.setGlobalPrefix('/api');
 
@@ -24,9 +27,9 @@ async function bootstrap() {
 
   app.use(helmet());
   app.use(cookieParser());
-  app.use(TracingLoggerMiddleware);
 
   await app.listen(process.env.PORT ?? 3000);
+  app.use(TracingLoggerMiddleware);
 
   const logger = new Logger();
   logger.log("Application listen on http://localhost:3000/api ");

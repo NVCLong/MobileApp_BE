@@ -6,6 +6,7 @@ import { WeatherSyncService } from "../weather/weather.sync.service";
 import { WeatherService } from "../weather/weather.service";
 import { CronJob } from 'cron';
 import { NotificationService } from "../notification/notification.service";
+import { Country } from "../weather/schemas/enum/countries.enum";
 
 @Injectable()
 export class TasksService implements OnModuleInit {
@@ -77,14 +78,29 @@ export class TasksService implements OnModuleInit {
 
   // Sync weather
   async syncWeather() {
-    this.logger.log('Syncing weather data...');
-    const location = 'Hanoi'; // Hardcoded for now, can be dynamic later
+    this.logger.log('Syncing weather data for all locations...');
+    const locations = Object.values(Country); // Hardcoded for now, can be dynamic later
+    try {
+      // Fetch weather data in batches to avoid API rate limits
+      const batchSize = 5; // Adjust batch size based on rate limits
+      for (let i = 0; i < locations.length; i += batchSize) {
+        const batch = locations.slice(i, i + batchSize);
+        await Promise.all(batch.map(location => this.fetchAndUpdateWeather(location)));
+      }
+
+      this.logger.log('Weather data synced successfully for all locations');
+    } catch (error) {
+      this.logger.error('Failed to sync weather data', error.stack);
+    }
+  }
+
+  private async fetchAndUpdateWeather(location: string): Promise<void> {
     try {
       const weatherData = await this.weatherSyncService.fetchWeatherData(location);
       await this.weatherService.updateWeatherData(location, weatherData);
-      this.logger.log('Weather data synced successfully');
+      this.logger.log(`Weather data synced successfully for location: ${location}`);
     } catch (error) {
-      this.logger.error('Failed to sync weather data', error.stack);
+      this.logger.error(`Failed to sync weather data for location: ${location}`, error.stack);
     }
   }
 

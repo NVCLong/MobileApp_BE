@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { WeatherService } from './weather.service';
 import { HttpService } from "../../shared/http.service";
+import { Country } from "./schemas/enum/countries.enum";
 
 
 @Injectable()
@@ -13,6 +14,9 @@ export class WeatherSyncService {
   ) {}
 
   async fetchWeatherData(location: string): Promise<any> {
+    this.logger.log(`Syncing weather data for all location ...`);
+    const locations = Object.values(Country)
+
     try {
       const apiUrl = `https://api.weatherapi.com/v1/current.json?key=f529241bc32e403eb3b135637241811&q=${location}&days=3&lang=en`;
       const response = await this.httpService.get(apiUrl)
