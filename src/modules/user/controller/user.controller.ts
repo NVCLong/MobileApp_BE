@@ -45,7 +45,7 @@ export class UsersController {
   // }
 
   @Post('/entryForm/:id')
-  async submitEntryForm(@Body() request: UserInfoRequest, @Param('id') userId: number): Promise<any> {
+  async submitEntryForm(@Body() request: UserInfoRequest, @Param('id') userId: string): Promise<any> {
     try{
       this.logger.log("Receive submit user request");
       const {userHobbies, userWorkFields, timeUsingPhone}= request;
@@ -59,13 +59,23 @@ export class UsersController {
     }
   }
 
-  @Post('/checkAccessCode')
-  async getUserInfo(@Body() request: CheckCodeRequestDto): Promise<any> {
+  @Get('/getUserInfo/:id')
+  async getUserInfo(@Param("id") userId: string): Promise<any> {
     try{
       this.logger.log("Receive getting user info");
-      return await this.userService.getUserInformation(request);
+      return await this.userService.getUserInformation(userId);
     }catch(e){
       this.logger.error("Error getting user info");
+      throw e
+    }
+  }
+
+  @Post('/checkAccessCode')
+  async checkAccessCode(@Body() request: CheckCodeRequestDto): Promise<any> {
+    try{
+      this.logger.log("Receive check access code");
+      return await this.userService.checkAccessCode(request.userId, request.code);
+    }catch (e){
       throw e
     }
   }

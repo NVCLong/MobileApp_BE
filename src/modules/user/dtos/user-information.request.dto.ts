@@ -23,4 +23,8 @@ export class UserInfoRequest {
   @IsOptional()
   exerciseTimePerWeek? : number;
 
+
+  @IsOptional()
+  code?:string;
+
 }
