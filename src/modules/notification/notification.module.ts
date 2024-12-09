@@ -1,10 +1,14 @@
 import { Module } from '@nestjs/common';
-import { NotificationService } from './notification.service';
+import { NotificationService } from './services/notification.service';
 import { MailerModule } from "@nestjs-modules/mailer";
 import { NotificationGateway } from "./notification.gateway";
 import { EmailNotificationStrategy } from "./strategy/email.strategy";
 import { WebsocketNotificationStrategy } from "./strategy/websocket.strategy";
+import { EmailNotificationService } from "./services/mail.service";
+import * as dotenv from "dotenv";
+import * as process from "node:process";
 
+dotenv.config();
 
 @Module({
   imports: [
@@ -12,8 +16,8 @@ import { WebsocketNotificationStrategy } from "./strategy/websocket.strategy";
     transport: {
       service: 'gmail',
       auth: {
-        user: 'your-email@gmail.com',
-        pass: 'your-password',
+        user: process.env.EMAIL,
+        pass: process.env.EMAIL_PASS,
       },
     },
   }),
@@ -21,7 +25,9 @@ import { WebsocketNotificationStrategy } from "./strategy/websocket.strategy";
 providers: [NotificationService,
   NotificationGateway,
   EmailNotificationStrategy,
-  WebsocketNotificationStrategy],
-  exports: [NotificationService],
+  WebsocketNotificationStrategy,
+  EmailNotificationService,
+],
+  exports: [NotificationService, EmailNotificationService,],
 })
 export class NotificationModule {}

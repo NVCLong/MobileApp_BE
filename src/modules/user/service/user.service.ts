@@ -18,6 +18,8 @@ import { Configs } from "../../config/schema/config.schema";
 import { HabitType, maximumHabit } from "../../default_habits/utils/habit.constant";
 import { HabitTrackingService } from "../../habit-tracking/habit-tracking.service";
 import { isDefaultHabits } from "../utils/user.utils";
+import { EmailNotificationService } from "../../notification/services/mail.service";
+import { CheckCodeRequestDto } from "../dtos/check-code-request.dto";
 
 @Injectable()
 export class UserService {
@@ -30,12 +32,13 @@ export class UserService {
     private readonly  habitTrackingService: HabitTrackingService,
     private readonly logger: TracingLogger,
     private readonly emailValidationHelper: EmailValidationHelper,
+    private readonly emailNotificationService: EmailNotificationService,
 
   ) {
     this.logger.setContext(UserService.name)
   }
 
-  async createUser(request: CreateUserRequestDTO){
+  async loginUser(request: CreateUserRequestDTO){
     this.logger.debug("[CreateUser] CreateUser called]")
     const { name, email, age} = request
     if(!name || !email){
@@ -47,15 +50,28 @@ export class UserService {
       this.logger.debug("[CreateUser] Email validation failed");
       throw new BadRequestException("Email validation failed");
     }
-    await this.checkExistEmail(email);
+    const user = await this.checkExistEmail(email);
+    const randomCode = Math.floor(100000 + Math.random() * 900000);
+    if(user){
+      if(user.userName !== request.name){
+        this.logger.log(`User name not match with existed user`);
+        throw new BadRequestException('User name not match with existed user')
+      }
+      user.loginCode = randomCode.toString();
+      await this.emailNotificationService.sendEmailNotification(user.userEmail, randomCode.toString());
+      await user.save()
+      return plainToInstance(CreateUserResult,{
+        userId: user.id,
+        status: HttpStatus.CREATED
+      })
+    }
     const res= await this.userModel.create({
       userName: request.name,
       userEmail: request.email,
       age: request.age,
+      loginCode: randomCode.toString(),
     })
-
-    //TODO
-    // add notification when user register success
+    await this.emailNotificationService.sendEmailNotification(res.userEmail, randomCode.toString());
 
     return plainToInstance(CreateUserResult,{
       userId: res.id,
@@ -73,14 +89,9 @@ export class UserService {
     return user;
   }
 
-  private async checkExistEmail(email) {
-    this.logger.debug("[CheckExistEmail] CheckExistEmail called");
-    const user =  await this.userModel.findOne({userEmail:email});
-    if(!user){
-      this.logger.debug("[CheckExistEmail] User not found and email does not exist");
-      return;
-    }
-    throw new BadRequestException("Email validation failed - Email is used by another user");
+  private async checkExistEmail(email: string) {
+    this.logger.debug("[CheckExistEmail] CheckExistEmail called")
+    return this.userModel.findOne({userEmail:email});
   }
 
   async updateUserInformation(request: UserInfoRequest, userId: number){
@@ -122,13 +133,17 @@ export class UserService {
      });
   }
 
-  async getUserInformation(userId: string){
+  async getUserInformation(request: CheckCodeRequestDto){
     this.logger.debug("[GetUserInformation] GetUserInformation called");
-    const fullUserInfo = await  this.userInformationModel.findOne({user: userId}).populate('user').exec();
+    const fullUserInfo = await  this.userInformationModel.findOne({user: request.userId}).populate('user').exec();
+    const user = fullUserInfo.user;
+    await this.checkAccessCode(user, request.code);
+    // if code correct reset code
     if(!fullUserInfo){
       this.logger.debug("[GetUserInformation] No data found for this userId");
       return null;
     }
+
     return plainToInstance(GetUserInfoResponse, {
       userId: fullUserInfo.user._id,
       userName: fullUserInfo.user.userName,
@@ -139,6 +154,20 @@ export class UserService {
       userUsingPhone: fullUserInfo.exerciseTimePerWeek,
       userExerciseTimePerWeek: fullUserInfo.exerciseTimePerWeek
     })
+  }
+
+  private async checkAccessCode(user: User, requestCode: string) {
+    if (!user.loginCode && user.loginCode === "") {
+      throw new BadRequestException("Invalid user Code");
+    }
+    if (user.loginCode !== requestCode) {
+      this.logger.debug(`[GetUserInformation] GetUserInformation called`);
+      return {
+        success: false,
+        message: "Wrong login code",
+      }
+    }
+    await this.userModel.updateOne({ userEmail: user.userEmail }, { $set: { loginCode: "" } }).exec();
   }
 
   async processReGenerate(){
@@ -234,6 +263,14 @@ export class UserService {
       this.logger.error(e);
       await session.abortTransaction();
       await session.endSession();
+      throw e;
+    }
+  }
+
+  async processRevokeCode(){
+    try{
+      await this.userModel.updateMany({}, {loginCode: ""});
+    }catch (e){
       throw e;
     }
   }

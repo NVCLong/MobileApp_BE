@@ -1,10 +1,10 @@
 import { Injectable } from '@nestjs/common';
-import { NotificationContext } from "./notification.context";
+import { NotificationContext } from "../notification.context";
 import { MailerService } from "@nestjs-modules/mailer";
-import { NotificationGateway } from "./notification.gateway";
-import { NotificationPayload } from "./notification.strategy";
-import { EmailNotificationStrategy } from "./strategy/email.strategy";
-import { WebsocketNotificationStrategy } from "./strategy/websocket.strategy";
+import { NotificationGateway } from "../notification.gateway";
+import { NotificationPayload } from "../notification.strategy";
+import { EmailNotificationStrategy } from "../strategy/email.strategy";
+import { WebsocketNotificationStrategy } from "../strategy/websocket.strategy";
 
 @Injectable()
 export class NotificationService {

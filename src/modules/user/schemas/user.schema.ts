@@ -19,6 +19,9 @@ export class User {
   longestStreak: number;
 
   _id: Types.ObjectId;
+
+  @Prop({required: false})
+  loginCode?: string;
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);

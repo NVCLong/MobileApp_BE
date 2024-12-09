@@ -3,6 +3,7 @@ import { UserService } from "../service/user.service";
 import { TracingLogger } from "../../tracing-logger/tracing-logger.service";
 import { CreateUserRequestDTO } from "../dtos/createUser.request.dto";
 import { UserInfoRequest } from "../dtos/user-information.request.dto";
+import { CheckCodeRequestDto } from "../dtos/check-code-request.dto";
 
 
 @Controller('users')
@@ -18,7 +19,7 @@ export class UsersController {
   async createUser(@Body() request: CreateUserRequestDTO): Promise<any> {
     try{
       this.logger.log("Receive create user request");
-      return await this.userService.createUser(request);
+      return await this.userService.loginUser(request);
     }catch(error){
       this.logger.error("Error creating user");
       throw error;
@@ -58,14 +59,14 @@ export class UsersController {
     }
   }
 
-  @Get('/:id')
-  async getUserInfo(@Param('id') id: string): Promise<any> {
+  @Post('/checkAccessCode')
+  async getUserInfo(@Body() request: CheckCodeRequestDto): Promise<any> {
     try{
       this.logger.log("Receive getting user info");
-      return await this.userService.getUserInformation(id);
+      return await this.userService.getUserInformation(request);
     }catch(e){
       this.logger.error("Error getting user info");
-      throw new BadRequestException(e);
+      throw e
     }
   }
 
