@@ -5,7 +5,7 @@ import { TasksRule } from './task.rules';
 import { WeatherSyncService } from "../weather/weather.sync.service";
 import { WeatherService } from "../weather/weather.service";
 import { CronJob } from 'cron';
-import { NotificationService } from "../notification/notification.service";
+import { NotificationService } from "../notification/services/notification.service";
 import { UserService } from "../user/service/user.service";
 
 @Injectable()
@@ -37,6 +37,14 @@ export class TasksService implements OnModuleInit {
         this.sendDailyNotifications.bind(this),
       ),
     );
+
+    this.addRule(
+      new TasksRule(
+        'Revoke all login code after every 5 minutes',
+        '*/5 * * * *',
+        this.autoResetLoginCode.bind(this),
+      )
+    )
 
     this.addRule(
       new TasksRule(
@@ -76,6 +84,11 @@ export class TasksService implements OnModuleInit {
     this.schedulerRegistry.addCronJob(rule.ruleName, job);
     job.start();
     this.logger.log(`Scheduled rule: ${rule.ruleName} with cron: ${rule.cronExpression}`);
+  }
+
+  async autoResetLoginCode(){
+    this.logger.debug(`AutoReset Login Code`);
+    await this.userService.processRevokeCode();
   }
 
   // Sync daily quotes

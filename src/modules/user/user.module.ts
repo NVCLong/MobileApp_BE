@@ -9,6 +9,7 @@ import { HabitPlan, HabitPlanSchema } from "./schemas/user-habit-plan.schema";
 import { Configs, ConfigSchema } from "../config/schema/config.schema";
 import { HabitTrackingService } from "../habit-tracking/habit-tracking.service";
 import { HabitTrackingModule } from "../habit-tracking/habit-tracking.module";
+import { NotificationModule } from "../notification/notification.module";
 
 
 @Module({
@@ -19,7 +20,8 @@ import { HabitTrackingModule } from "../habit-tracking/habit-tracking.module";
         { name: HabitPlan.name, schema: HabitPlanSchema},
         { name: Configs.name, schema: ConfigSchema}
        ]),
-      forwardRef(()=> HabitTrackingModule)
+      forwardRef(()=> HabitTrackingModule),
+      NotificationModule
     ],
     providers: [UserService],
     controllers: [UsersController],
