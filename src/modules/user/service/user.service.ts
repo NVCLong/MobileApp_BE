@@ -94,8 +94,14 @@ export class UserService {
     return this.userModel.findOne({userEmail:email});
   }
 
-  async updateUserInformation(request: UserInfoRequest, userId: number){
+  async updateUserInformation(request: UserInfoRequest, userId: string){
      this.logger.debug("[UpdateUserInformation] UpdateUserInformation called");
+     const user = await this.userModel.findOne({ _id: new Types.ObjectId(userId)})
+     // if enter code => login code will "", out of time login code = null
+    //if code is missing => update infor and expect user already submit code
+    if (user.loginCode !== "") {
+      throw new BadRequestException("User do not enter login code first");
+    }
      const sportSupportTypes= Object.values(Sport).filter((value)=> typeof value === "string");
      const workFieldsTypes = Object.values(UserSupportWorkField).filter((value)=> typeof value === 'string')
      const hobbiesTypes = Object.values(Hobby).filter((value)=> typeof value === 'string');
@@ -108,8 +114,11 @@ export class UserService {
     const checkInputHobbies = request.userHobbies?.every((value)=>{
       return hobbiesTypes.includes(value);
     })
-    if(!checkInputWorkFields || !checkInputHobbies || !checkInputFavSport){
-      throw new BadRequestException("Invalid sport type support");
+    if(!checkInputWorkFields || !checkInputHobbies){
+      throw new BadRequestException("Invalid type support");
+    }
+    if(request.favSport && !checkInputFavSport){
+      throw new BadRequestException("Invalid type support");
     }
     const userInformation = await this.userInformationModel.findOne({user: userId})
     const updateData: any = {};
@@ -125,6 +134,8 @@ export class UserService {
     }
      return await this.userInformationModel.create({
        user: userId,
+       userEmail: user.userEmail,
+       userName: user.userName,
        favSport: request.favSport || [],
        timeUsingPhone: request.timeUsingPhone,
        exerciseTimePerWeek: request.exerciseTimePerWeek || 0,
@@ -133,13 +144,11 @@ export class UserService {
      });
   }
 
-  async getUserInformation(request: CheckCodeRequestDto){
+  async getUserInformation(userId: string){
     this.logger.debug("[GetUserInformation] GetUserInformation called");
-    const fullUserInfo = await  this.userInformationModel.findOne({user: request.userId}).populate('user').exec();
-    const user = fullUserInfo.user;
-    await this.checkAccessCode(user, request.code);
+    const fullUserInfo = await  this.userInformationModel.findOne({user: userId}).populate('user').exec();
     // if code correct reset code
-    if(!fullUserInfo){
+    if(!fullUserInfo || fullUserInfo.user.loginCode !== ""){
       this.logger.debug("[GetUserInformation] No data found for this userId");
       return null;
     }
@@ -156,18 +165,25 @@ export class UserService {
     })
   }
 
-  private async checkAccessCode(user: User, requestCode: string) {
-    if (!user.loginCode && user.loginCode === "") {
+  async checkAccessCode(userId: string, requestCode: string) {
+    const user = await this.userModel.findOne({_id: userId});
+    if (!user?.loginCode) {
       throw new BadRequestException("Invalid user Code");
     }
-    if (user.loginCode !== requestCode) {
-      this.logger.debug(`[GetUserInformation] GetUserInformation called`);
-      return {
-        success: false,
-        message: "Wrong login code",
-      }
+    if(user?.loginCode === ""){
+      this.logger.debug(`User already enter code`)
+      return;
     }
-    await this.userModel.updateOne({ userEmail: user.userEmail }, { $set: { loginCode: "" } }).exec();
+    if (user?.loginCode !== requestCode) {
+      throw new BadRequestException("Invalid login Code");
+    }
+    this.logger.debug(`User access Code: ${user.loginCode}`);
+    await this.userModel.updateOne({ userEmail: user?.userEmail }, { $set: { loginCode: "" } }).exec();
+    const userInfo = await  this.userInformationModel.findOne({user: user._id}).populate('user').exec();
+    return {
+      isNewUser: !userInfo,
+      userId: user._id,
+    }
   }
 
   async processReGenerate(){
@@ -269,7 +285,7 @@ export class UserService {
 
   async processRevokeCode(){
     try{
-      await this.userModel.updateMany({}, {loginCode: ""});
+      await this.userModel.updateMany({ loginCode: { $ne: "" } }, { loginCode: null });
     }catch (e){
       throw e;
     }
