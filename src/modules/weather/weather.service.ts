@@ -40,18 +40,23 @@ export class WeatherService {
   }
 
   // Retrieve weather data for a specific location
-  async getWeatherData(location: string): Promise<Weather | null> {
+  async getWeatherData(location: string): Promise<Weather | any> {
     if (!this.isValidLocation(location)) {
       this.logger.error(`Invalid location: ${location}`);
-      throw new Error(`Location "${location}" is not a valid country.`);
+      return { success: false, message: `Location "${location}" is not a valid country.` };
     }
 
     try {
       this.logger.log(`Retrieving weather data for location: ${location}`);
-      return this.weatherModel.findOne({ country: location }).exec();
+      const weatherData = await this.weatherModel.findOne({ country: location }).exec();
+      if (weatherData) {
+        return weatherData;
+      } else {
+        return { success: false, message: 'No weather data found for the specified location.' };
+      }
     } catch (error) {
       this.logger.error('Failed to retrieve weather data', error.stack);
-      throw new Error('Database query failed');
+      return { success: false, message: 'Database query failed' };
     }
   }
 
