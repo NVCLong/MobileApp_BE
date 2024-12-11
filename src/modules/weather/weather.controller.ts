@@ -7,8 +7,8 @@ export class WeatherController {
   constructor(private readonly weatherService: WeatherService) {}
 
 
-  @Get(':city')
-  async getWeather(@Param('city') city: string): Promise<Weather | null> {
-    return this.weatherService.getWeatherData(city);
+  @Get(':country')
+  async getWeather(@Param('country') country: string): Promise<Weather | null> {
+    return this.weatherService.getWeatherData(country);
   }
 }

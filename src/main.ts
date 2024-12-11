@@ -11,6 +11,9 @@ import { DocumentBuilder, SwaggerModule } from "@nestjs/swagger";
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
+  // const tasksService = app.get(TasksService);
+  // await tasksService.syncWeather();
+
   app.useWebSocketAdapter(new IoAdapter(app));
   app.setGlobalPrefix('/api');
 
