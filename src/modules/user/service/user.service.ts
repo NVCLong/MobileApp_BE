@@ -1,4 +1,4 @@
-import { BadRequestException, HttpStatus, Inject, Injectable } from "@nestjs/common";
+import { BadRequestException, HttpStatus, Injectable } from "@nestjs/common";
 import { User } from "../schemas/user.schema";
 import { Model, Types } from "mongoose";
 import { TracingLogger } from "../../tracing-logger/tracing-logger.service";
@@ -13,7 +13,13 @@ import { Hobby, Sport, UserSupportWorkField } from "../utils/user.constant";
 import { GetUserInfoResponse } from "../dtos/get-user-info.response.dto";
 import { HabitCategory } from "../../default_habits/schema/habit-categories.schema";
 import { DefaultHabits } from "../../default_habits/schema/default_habits.schema";
-import { HabitPlan, HabitPlanDocument } from "../schemas/user-habit-plan.schema";
+import { DaysOfWeek, HabitDailyPlan, HabitPlan } from "../schemas/user-habit-plan.schema";
+import { Configs } from "../../config/schema/config.schema";
+import { HabitType, maximumHabit } from "../../default_habits/utils/habit.constant";
+import { HabitTrackingService } from "../../habit-tracking/habit-tracking.service";
+import { isDefaultHabits } from "../utils/user.utils";
+import { EmailNotificationService } from "../../notification/services/mail.service";
+import { CheckCodeRequestDto } from "../dtos/check-code-request.dto";
 
 @Injectable()
 export class UserService {
@@ -21,15 +27,18 @@ export class UserService {
     @InjectModel(User.name) private readonly userModel: Model<User>,
     @InjectModel(UserInformation.name) private readonly userInformationModel: Model<UserInformation>,
     @InjectModel(HabitCategory.name) private readonly habitCategoryModel: Model<HabitCategory>,
-    @InjectModel(HabitPlan.name) private readonly habitPlanModel: Model<HabitPlanDocument>,
+    @InjectModel(HabitPlan.name) private readonly habitPlanModel: Model<HabitPlan>,
+    @InjectModel(Configs.name) private readonly configsModel: Model<Configs>,
+    private readonly  habitTrackingService: HabitTrackingService,
     private readonly logger: TracingLogger,
     private readonly emailValidationHelper: EmailValidationHelper,
+    private readonly emailNotificationService: EmailNotificationService,
 
   ) {
     this.logger.setContext(UserService.name)
   }
 
-  async createUser(request: CreateUserRequestDTO){
+  async loginUser(request: CreateUserRequestDTO){
     this.logger.debug("[CreateUser] CreateUser called]")
     const { name, email, age} = request
     if(!name || !email){
@@ -41,15 +50,28 @@ export class UserService {
       this.logger.debug("[CreateUser] Email validation failed");
       throw new BadRequestException("Email validation failed");
     }
-    await this.checkExistEmail(email);
+    const user = await this.checkExistEmail(email);
+    const randomCode = Math.floor(100000 + Math.random() * 900000);
+    if(user){
+      if(user.userName !== request.name){
+        this.logger.log(`User name not match with existed user`);
+        throw new BadRequestException('User name not match with existed user')
+      }
+      user.loginCode = randomCode.toString();
+      await this.emailNotificationService.sendEmailNotification(user.userEmail, randomCode.toString());
+      await user.save()
+      return plainToInstance(CreateUserResult,{
+        userId: user.id,
+        status: HttpStatus.CREATED
+      })
+    }
     const res= await this.userModel.create({
       userName: request.name,
       userEmail: request.email,
       age: request.age,
+      loginCode: randomCode.toString(),
     })
-
-    //TODO
-    // add notification when user register success
+    await this.emailNotificationService.sendEmailNotification(res.userEmail, randomCode.toString());
 
     return plainToInstance(CreateUserResult,{
       userId: res.id,
@@ -67,18 +89,19 @@ export class UserService {
     return user;
   }
 
-  private async checkExistEmail(email) {
-    this.logger.debug("[CheckExistEmail] CheckExistEmail called");
-    const user =  await this.userModel.findOne({userEmail:email});
-    if(!user){
-      this.logger.debug("[CheckExistEmail] User not found and email does not exist");
-      return;
-    }
-    throw new BadRequestException("Email validation failed - Email is used by another user");
+  private async checkExistEmail(email: string) {
+    this.logger.debug("[CheckExistEmail] CheckExistEmail called")
+    return this.userModel.findOne({userEmail:email});
   }
 
-  async updateUserInformation(request: UserInfoRequest, userId: number){
+  async updateUserInformation(request: UserInfoRequest, userId: string){
      this.logger.debug("[UpdateUserInformation] UpdateUserInformation called");
+     const user = await this.userModel.findOne({ _id: new Types.ObjectId(userId)})
+     // if enter code => login code will "", out of time login code = null
+    //if code is missing => update infor and expect user already submit code
+    if (user.loginCode !== "") {
+      throw new BadRequestException("User do not enter login code first");
+    }
      const sportSupportTypes= Object.values(Sport).filter((value)=> typeof value === "string");
      const workFieldsTypes = Object.values(UserSupportWorkField).filter((value)=> typeof value === 'string')
      const hobbiesTypes = Object.values(Hobby).filter((value)=> typeof value === 'string');
@@ -91,8 +114,11 @@ export class UserService {
     const checkInputHobbies = request.userHobbies?.every((value)=>{
       return hobbiesTypes.includes(value);
     })
-    if(!checkInputWorkFields || !checkInputHobbies || !checkInputFavSport){
-      throw new BadRequestException("Invalid sport type support");
+    if(!checkInputWorkFields || !checkInputHobbies){
+      throw new BadRequestException("Invalid type support");
+    }
+    if(request.favSport && !checkInputFavSport){
+      throw new BadRequestException("Invalid type support");
     }
     const userInformation = await this.userInformationModel.findOne({user: userId})
     const updateData: any = {};
@@ -108,6 +134,8 @@ export class UserService {
     }
      return await this.userInformationModel.create({
        user: userId,
+       userEmail: user.userEmail,
+       userName: user.userName,
        favSport: request.favSport || [],
        timeUsingPhone: request.timeUsingPhone,
        exerciseTimePerWeek: request.exerciseTimePerWeek || 0,
@@ -119,10 +147,12 @@ export class UserService {
   async getUserInformation(userId: string){
     this.logger.debug("[GetUserInformation] GetUserInformation called");
     const fullUserInfo = await  this.userInformationModel.findOne({user: userId}).populate('user').exec();
-    if(!fullUserInfo){
+    // if code correct reset code
+    if(!fullUserInfo || fullUserInfo.user.loginCode !== ""){
       this.logger.debug("[GetUserInformation] No data found for this userId");
       return null;
     }
+
     return plainToInstance(GetUserInfoResponse, {
       userId: fullUserInfo.user._id,
       userName: fullUserInfo.user.userName,
@@ -135,9 +165,45 @@ export class UserService {
     })
   }
 
+  async checkAccessCode(userId: string, requestCode: string) {
+    const user = await this.userModel.findOne({_id: userId});
+    if (!user?.loginCode) {
+      throw new BadRequestException("Invalid user Code");
+    }
+    if(user?.loginCode === ""){
+      this.logger.debug(`User already enter code`)
+      return;
+    }
+    if (user?.loginCode !== requestCode) {
+      throw new BadRequestException("Invalid login Code");
+    }
+    this.logger.debug(`User access Code: ${user.loginCode}`);
+    await this.userModel.updateOne({ userEmail: user?.userEmail }, { $set: { loginCode: "" } }).exec();
+    const userInfo = await  this.userInformationModel.findOne({user: user._id}).populate('user').exec();
+    return {
+      isNewUser: !userInfo,
+      userId: user._id,
+    }
+  }
+
+  async processReGenerate(){
+    try{
+      const users = await this.userModel.find();
+      if(users.length === 0 ){
+        throw new BadRequestException("No users found for this userId");
+      }
+      users.forEach(user => {
+        this.createHabitPlanByUserInfo(user._id.toString());
+      })
+    }catch (error){
+      throw  error;
+    }
+  }
+
   async createHabitPlanByUserInfo(userId: string){
     this.logger.debug(`[GetHabitByUserInfo] with userId = [${userId}] called`);
-    const userInfo = await  this.userInformationModel.findOne({user: userId}).populate('user').exec();
+    const userIdObjectId = new Types.ObjectId(userId);
+    const userInfo = await  this.userInformationModel.findOne({user: userIdObjectId}).populate('user').exec();
     const habitCategories = await this.habitCategoryModel.find().populate({
       path: 'listDefaultHabits',
       model: DefaultHabits.name,
@@ -163,7 +229,7 @@ export class UserService {
         this.logger.debug(`Match workFields of item [${a.categoryName}] have work field count = ${countWorkFieldsA} and hobbies count = ${countHobbiesA}`);
         this.logger.debug(`Match workFields of item [${b.categoryName}] have work field count = ${countWorkFieldsB} and hobbies count = ${countHobbiesB}`);
         const comparePointsA = countWorkFieldsA + countHobbiesA;
-        const comparePointsB = countHobbiesB + countHobbiesB;
+        const comparePointsB = countWorkFieldsB + countHobbiesB;
         return comparePointsA - comparePointsB;
       });
     }
@@ -172,25 +238,106 @@ export class UserService {
     // user need to accept the plan for showing  these habits
     // if user not accept show empty list
     // if user change info => need user confirm a plan again to re-generate a plan
-    const planCreationData = await this.getPlanCreationNecessaryData(habitCategories, userId);
+    const {objectIdToHabitMap, habitNameToHabitMap, maxHabits, daysOfWeek} = await  this.getPlanCreationNecessaryData(habitCategories, userId);
+    let currentDayIndex = 0;
+    let currentDayHabitCount = 0;
+    //start to create plan
+    const session = await this.habitPlanModel.db.startSession();
+    session.startTransaction();
+    try {
+      const plan = await this.createPlanEntity(userIdObjectId);
+      this.logger.debug(`Start to insert habit tracking to days in week with maximum habits ${maxHabits}`)
+      for (const [objectId, defaultHabit] of objectIdToHabitMap) {
+        if (isDefaultHabits(defaultHabit)) {
+          const habitTracking = await this.habitTrackingService.createHabitTracking({
+            userId: userId,
+            habitId: objectId.toString(),
+            progress: defaultHabit.defaultScore
+          })
+          const habitDaily: HabitDailyPlan = {
+            type: HabitType.Default,
+            data: habitTracking._id
+          }
+          const currentDay = daysOfWeek[currentDayIndex];
+          const currentPlans = plan.weeklyPlan.get(currentDay) || [];
+          this.logger.debug(`Set up for ${currentDay} and default tracking in list ${currentDayHabitCount}`);
+          currentPlans.push(habitDaily);
+          plan.weeklyPlan.set(currentDay, currentPlans);
+          currentDayHabitCount++;
+          if (currentDayHabitCount === maxHabits) {
+            currentDayIndex = (currentDayIndex + 1) % daysOfWeek.length;
+            currentDayHabitCount = 0;
+          }
+        }
+      }
+      await plan.save();
+      await session.commitTransaction();
+      await session.endSession();
+      // const planEntity =
+      return plan;
+    }catch (e){
+      this.logger.error(e);
+      await session.abortTransaction();
+      await session.endSession();
+      throw e;
+    }
+  }
 
-    return habitCategories;
+  async processRevokeCode(){
+    try{
+      await this.userModel.updateMany({ loginCode: { $ne: "" } }, { loginCode: null });
+    }catch (e){
+      throw e;
+    }
+  }
+
+  async createPlanEntity(userId: Types.ObjectId){
+    this.logger.debug(`[CreatePlanEntity] with userId = [${userId}] called`);
+    const startDate = new Date();
+    const endDate = new Date(startDate);
+    endDate.setDate(endDate.getDate() + 7);
+    this.logger.debug(`Start to create a plan for user from ${startDate} to ${endDate}`);
+    const newPlan = {
+      userId: userId,
+      weeklyPlan: new Map<DaysOfWeek, HabitDailyPlan[]>,
+      startDate: startDate,
+      endDate,
+    }
+    return this.habitPlanModel.create(newPlan);
   }
 
   private async getPlanCreationNecessaryData(habitCategories: HabitCategory[], userId: string){
     const objectIdToHabitMap = new Map<Types.ObjectId, DefaultHabits | Types.ObjectId>();
+    const habitNameToHabitMap= new Map<string, DefaultHabits | Types.ObjectId>;
+    const numHabits = await this.configsModel.findOne({ configName: maximumHabit});
+    const daysOfWeek = Object.values(DaysOfWeek);
     habitCategories.forEach((category)=>{
       category.listDefaultHabits.forEach(defaultHabit=>{
-        objectIdToHabitMap.set(defaultHabit._id, defaultHabit);
+          objectIdToHabitMap.set(defaultHabit._id, defaultHabit);
+      })
+      category.listDefaultHabits.forEach(defaultHabit=>{
+        if (defaultHabit instanceof DefaultHabits) {
+          habitNameToHabitMap.set(defaultHabit.name, defaultHabit);
+        }
       })
     });
     return {
-      objectIdToHabitMap
+      objectIdToHabitMap,
+      habitNameToHabitMap,
+      maxHabits: numHabits?.configValue,
+      daysOfWeek
     }
   }
 
-  private getLastPlan(userId: string){
-
+  async getLastPlan(userId: string){
+    this.logger.debug(`[GetLastPlan] with userId = [${userId}] called`);
+    const userPlan = await this.habitPlanModel.find({
+      userId,
+    }).sort({_id: -1});
+    if(!userPlan){
+      throw new BadRequestException('User do not have any habit plan in this week');
+    }
+    const dailyPlan = userPlan[0].weeklyPlan;
   }
 
   async getHabitPlanById(habitPlanId: string){

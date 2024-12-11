@@ -11,7 +11,7 @@ export class HabitPlan {
   _id: Types.ObjectId;
 
   @Prop({ type: Types.ObjectId, ref: User.name , required: true })
-  user_id: Types.ObjectId;
+  userId: Types.ObjectId;
 
   @Prop({
     type: Map,
@@ -21,16 +21,16 @@ export class HabitPlan {
     },
     default: {},
   })
-  weekly_plan: Map<DaysOfWeek, HabitDailyPlan[]>;
+  weeklyPlan: Map<DaysOfWeek, HabitDailyPlan[]>;
 
-  @Prop({ default: Date.now })
-  start_date: Date;
+  @Prop({ required: true })
+  startDate: Date;
 
   @Prop({ required: false })
-  end_date?: Date;
+  endDate?: Date;
 
   @Prop({ default: Date.now })
-  last_updated: Date;
+  lastUpdated: Date;
 }
 
 export const HabitPlanSchema = SchemaFactory.createForClass(HabitPlan);

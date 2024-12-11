@@ -3,6 +3,7 @@ import { UserService } from "../service/user.service";
 import { TracingLogger } from "../../tracing-logger/tracing-logger.service";
 import { CreateUserRequestDTO } from "../dtos/createUser.request.dto";
 import { UserInfoRequest } from "../dtos/user-information.request.dto";
+import { CheckCodeRequestDto } from "../dtos/check-code-request.dto";
 
 
 @Controller('users')
@@ -18,7 +19,7 @@ export class UsersController {
   async createUser(@Body() request: CreateUserRequestDTO): Promise<any> {
     try{
       this.logger.log("Receive create user request");
-      return await this.userService.createUser(request);
+      return await this.userService.loginUser(request);
     }catch(error){
       this.logger.error("Error creating user");
       throw error;
@@ -44,7 +45,7 @@ export class UsersController {
   // }
 
   @Post('/entryForm/:id')
-  async submitEntryForm(@Body() request: UserInfoRequest, @Param('id') userId: number): Promise<any> {
+  async submitEntryForm(@Body() request: UserInfoRequest, @Param('id') userId: string): Promise<any> {
     try{
       this.logger.log("Receive submit user request");
       const {userHobbies, userWorkFields, timeUsingPhone}= request;
@@ -58,19 +59,29 @@ export class UsersController {
     }
   }
 
-  @Get('/:id')
-  async getUserInfo(@Param('id') id: string): Promise<any> {
+  @Get('/getUserInfo/:id')
+  async getUserInfo(@Param("id") userId: string): Promise<any> {
     try{
       this.logger.log("Receive getting user info");
-      return await this.userService.getUserInformation(id);
+      return await this.userService.getUserInformation(userId);
     }catch(e){
       this.logger.error("Error getting user info");
-      throw new BadRequestException(e);
+      throw e
+    }
+  }
+
+  @Post('/checkAccessCode')
+  async checkAccessCode(@Body() request: CheckCodeRequestDto): Promise<any> {
+    try{
+      this.logger.log("Receive check access code");
+      return await this.userService.checkAccessCode(request.userId, request.code);
+    }catch (e){
+      throw e
     }
   }
 
   @Get('/createHabitPlan/:id')
-  async getDefaultHabit(@Param('id') id: string): Promise<any> {
+  async createHabitPlan(@Param('id') id: string): Promise<any> {
     try{
       this.logger.log("Receive getting default habit");
       return await this.userService.createHabitPlanByUserInfo(id);

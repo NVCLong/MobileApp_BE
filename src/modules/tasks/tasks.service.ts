@@ -5,8 +5,10 @@ import { TasksRule } from './task.rules';
 import { WeatherSyncService } from "../weather/weather.sync.service";
 import { WeatherService } from "../weather/weather.service";
 import { CronJob } from 'cron';
+
 import { NotificationService } from "../notification/notification.service";
 import { Country } from "../weather/schemas/enum/countries.enum";
+import { UserService } from "../user/service/user.service";
 
 @Injectable()
 export class TasksService implements OnModuleInit {
@@ -19,6 +21,7 @@ export class TasksService implements OnModuleInit {
     private readonly weatherSyncService: WeatherSyncService,
     private readonly weatherService: WeatherService,
     private readonly notificationService: NotificationService, // Inject notification service
+    private readonly userService: UserService,
   ) {
     // Add default rules during initialization
     this.addRule(
@@ -36,6 +39,22 @@ export class TasksService implements OnModuleInit {
         this.sendDailyNotifications.bind(this),
       ),
     );
+
+    this.addRule(
+      new TasksRule(
+        'Revoke all login code after every 5 minutes',
+        '*/5 * * * *',
+        this.autoResetLoginCode.bind(this),
+      )
+    )
+
+    this.addRule(
+      new TasksRule(
+        'Auto generate habit plan for each user',
+        '0 0 * * 0',
+        this.autoReGeneratePlan.bind(this),
+      )
+    )
 
     // Relate to weather
     this.addRule(
@@ -67,6 +86,11 @@ export class TasksService implements OnModuleInit {
     this.schedulerRegistry.addCronJob(rule.ruleName, job);
     job.start();
     this.logger.log(`Scheduled rule: ${rule.ruleName} with cron: ${rule.cronExpression}`);
+  }
+
+  async autoResetLoginCode(){
+    this.logger.debug(`AutoReset Login Code`);
+    await this.userService.processRevokeCode();
   }
 
   // Sync daily quotes
@@ -112,6 +136,11 @@ export class TasksService implements OnModuleInit {
       target: 'dailyNotification',
       message: 'Here is your daily motivational quote!',
     });
+  }
+
+  async autoReGeneratePlan(){
+    this.logger.debug(`Start re-generate habit plan for all user`)
+    await this.userService.processReGenerate();
   }
 
   async sendUserRegistrationNotification(email: string): Promise<void> {
