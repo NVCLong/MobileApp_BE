@@ -6,7 +6,7 @@ import { WeatherSyncService } from "../weather/weather.sync.service";
 import { WeatherService } from "../weather/weather.service";
 import { CronJob } from 'cron';
 
-import { NotificationService } from "../notification/notification.service";
+import { NotificationService } from "../notification/services/notification.service";
 import { Country } from "../weather/schemas/enum/countries.enum";
 import { UserService } from "../user/service/user.service";
 
