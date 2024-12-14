@@ -167,9 +167,14 @@ export class UserService {
   }
 
   async checkAccessCode(userId: string, requestCode: string) {
+    this.logger.debug("[CheckAccessCode] CheckAccessCode called "+ userId + " "+requestCode);
+    if(!userId || !requestCode) {
+      throw new BadRequestException('Missing required fields');
+    }
     const user = await this.userModel.findOne({_id: userId});
+    console.log(user);
     if (!user?.loginCode) {
-      throw new BadRequestException("Invalid user Code");
+      throw new BadRequestException("Do not found user");
     }
     if(user?.loginCode === ""){
       this.logger.debug(`User already enter code`)
