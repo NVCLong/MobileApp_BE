@@ -153,6 +153,12 @@ export class UserService {
       this.logger.debug("[GetUserInformation] No data found for this userId");
       return null;
     }
+    const today = new Date();
+    this.logger.debug(`Query plan for ${today}`);
+    const userPlans = await this.habitPlanModel.find({userId: new Types.ObjectId(userId)});
+    const currentPlan = userPlans.find((plan) => {
+      return plan.endDate > today && plan.startDate <= today;
+    })
 
     return plainToInstance(GetUserInfoResponse, {
       userId: fullUserInfo.user._id,
@@ -162,7 +168,8 @@ export class UserService {
       userHobbies: fullUserInfo.hobbies,
       userFavSport: fullUserInfo.favSport,
       userUsingPhone: fullUserInfo.exerciseTimePerWeek,
-      userExerciseTimePerWeek: fullUserInfo.exerciseTimePerWeek
+      userExerciseTimePerWeek: fullUserInfo.exerciseTimePerWeek,
+      weekPlanId: currentPlan ? currentPlan._id : null,
     })
   }
 
@@ -172,9 +179,8 @@ export class UserService {
       throw new BadRequestException('Missing required fields');
     }
     const user = await this.userModel.findOne({_id: userId});
-    console.log(user);
     if (!user?.loginCode) {
-      throw new BadRequestException("Do not found user");
+      throw new BadRequestException("Code expired");
     }
     if(user?.loginCode === ""){
       this.logger.debug(`User already enter code`)

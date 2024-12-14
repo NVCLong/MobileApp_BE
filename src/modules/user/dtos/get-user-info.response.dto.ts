@@ -18,4 +18,6 @@ export class GetUserInfoResponse {
   userUsingPhoneTime: number;
   @Expose()
   userExerciseTime: number;
+  @Expose()
+  weekPlanId: string;
 }
