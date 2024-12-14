@@ -173,6 +173,8 @@ export class UserService {
     })
   }
 
+
+
   async checkAccessCode(userId: string, requestCode: string) {
     this.logger.debug("[CheckAccessCode] CheckAccessCode called "+ userId + " "+requestCode);
     if(!userId || !requestCode) {
@@ -215,17 +217,23 @@ export class UserService {
   async createHabitPlanByUserInfo(userId: string){
     this.logger.debug(`[GetHabitByUserInfo] with userId = [${userId}] called`);
     const userIdObjectId = new Types.ObjectId(userId);
-    const userInfo = await  this.userInformationModel.findOne({user: userIdObjectId}).populate('user').exec();
+    const userInfo = await  this.userInformationModel.findOne({user: userId}).populate('user').exec();
     const habitCategories = await this.habitCategoryModel.find().populate({
       path: 'listDefaultHabits',
       model: DefaultHabits.name,
     })
-      .exec();;
+      .exec();
     if(!userInfo){
-      throw new BadRequestException("User not found");
+      return {
+        message: 'No users found for this userId',
+        status: "fail"
+      };
     }
     if(habitCategories.length === 0){
-      throw new BadRequestException("No data found any habit categories");
+      return {
+        message: 'No categories found for generate plan',
+        status: "fail"
+      }
     }
     this.logger.debug(`Found user information with userId = [${userId}]`);
     const { work, favSport, hobbies, exerciseTimePerWeek, timeUsingPhone}= userInfo;

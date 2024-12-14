@@ -14,7 +14,7 @@ export class TracingLogger extends Logger{
     }
 
     getMessage(message:string){
-        const traceId = this.als?.getStore().traceId;
+        const traceId = this.als?.getStore()?.traceId;
         return `${traceId} - ${message}`;
     }
 
