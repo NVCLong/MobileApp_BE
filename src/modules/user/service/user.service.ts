@@ -41,6 +41,7 @@ export class UserService {
   async loginUser(request: CreateUserRequestDTO){
     this.logger.debug("[CreateUser] CreateUser called]")
     const { name, email, age} = request
+    this.logger.debug(name + email);
     if(!name || !email){
       this.logger.debug("[CreateUser] Do not have enough information");
       throw new BadRequestException("Missing required fields")
