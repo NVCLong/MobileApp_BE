@@ -20,6 +20,7 @@ import { HabitTrackingService } from "../../habit-tracking/habit-tracking.servic
 import { isDefaultHabits } from "../utils/user.utils";
 import { EmailNotificationService } from "../../notification/services/mail.service";
 import { CheckCodeRequestDto } from "../dtos/check-code-request.dto";
+import { DailyPlan, GetHabitPlanResponse, Plan } from "../dtos/get-habit-plan.response.dto";
 
 @Injectable()
 export class UserService {
@@ -42,7 +43,7 @@ export class UserService {
     this.logger.debug("[CreateUser] CreateUser called]")
     const { name, email, age} = request
     this.logger.debug(name + email);
-    if(!name || !email){
+    if(!email){
       this.logger.debug("[CreateUser] Do not have enough information");
       throw new BadRequestException("Missing required fields")
     }
@@ -54,10 +55,6 @@ export class UserService {
     const user = await this.checkExistEmail(email);
     const randomCode = Math.floor(100000 + Math.random() * 900000);
     if(user){
-      if(user.userName !== request.name){
-        this.logger.log(`User name not match with existed user`);
-        throw new BadRequestException('User name not match with existed user')
-      }
       user.loginCode = randomCode.toString();
       await this.emailNotificationService.sendEmailNotification(user.userEmail, randomCode.toString());
       await user.save()
@@ -173,6 +170,8 @@ export class UserService {
     })
   }
 
+
+
   async checkAccessCode(userId: string, requestCode: string) {
     this.logger.debug("[CheckAccessCode] CheckAccessCode called "+ userId + " "+requestCode);
     if(!userId || !requestCode) {
@@ -215,17 +214,23 @@ export class UserService {
   async createHabitPlanByUserInfo(userId: string){
     this.logger.debug(`[GetHabitByUserInfo] with userId = [${userId}] called`);
     const userIdObjectId = new Types.ObjectId(userId);
-    const userInfo = await  this.userInformationModel.findOne({user: userIdObjectId}).populate('user').exec();
+    const userInfo = await  this.userInformationModel.findOne({user: userId}).populate('user').exec();
     const habitCategories = await this.habitCategoryModel.find().populate({
       path: 'listDefaultHabits',
       model: DefaultHabits.name,
     })
-      .exec();;
+      .exec();
     if(!userInfo){
-      throw new BadRequestException("User not found");
+      return {
+        message: 'No users found for this userId',
+        status: "fail"
+      };
     }
     if(habitCategories.length === 0){
-      throw new BadRequestException("No data found any habit categories");
+      return {
+        message: 'No categories found for generate plan',
+        status: "fail"
+      }
     }
     this.logger.debug(`Found user information with userId = [${userId}]`);
     const { work, favSport, hobbies, exerciseTimePerWeek, timeUsingPhone}= userInfo;
@@ -264,7 +269,8 @@ export class UserService {
           const habitTracking = await this.habitTrackingService.createHabitTracking({
             userId: userId,
             habitId: objectId.toString(),
-            progress: defaultHabit.defaultScore
+            progress: defaultHabit.defaultScore,
+            planId: plan._id.toString(),
           })
           const habitDaily: HabitDailyPlan = {
             type: HabitType.Default,
@@ -344,20 +350,56 @@ export class UserService {
   async getLastPlan(userId: string){
     this.logger.debug(`[GetLastPlan] with userId = [${userId}] called`);
     const userPlan = await this.habitPlanModel.find({
-      userId,
+      userId: new Types.ObjectId(userId),
     }).sort({_id: -1});
-    if(!userPlan){
+
+    if(!userPlan || userPlan.length === 0){
       throw new BadRequestException('User do not have any habit plan in this week');
     }
-    const dailyPlan = userPlan[0].weeklyPlan;
+
+    const dailyPlan = userPlan[0];
+    this.logger.debug(`[GetLastPlan] with userId = [${userId}] and planId = [${dailyPlan._id}]`);
+    const allHabitTracking = await  this.getAllHabitTracking(userId, dailyPlan._id.toString(), dailyPlan.weeklyPlan);
+    if(allHabitTracking.size === 0){
+      throw new BadRequestException(`User do not have any habit tracking for this plan`);
+    }
+
+    //set up plan
+    const plan = new Plan();
+    for(const [day, dailyPlan] of allHabitTracking){
+      this.logger.debug(`[GetLastPlan] with userId = [${userId}] and set up daily value for day = ${day}`);
+      plan[day.toLowerCase()] = dailyPlan;
+    }
+
+
+    return plainToInstance(GetHabitPlanResponse, {
+      startDate: dailyPlan.startDate.toISOString().split('T')[0],
+      endDate: dailyPlan.endDate.toISOString().split('T')[0],
+      dailyPlans: plan
+    });
   }
 
-  async getHabitPlanById(habitPlanId: string){
-    return this.habitPlanModel.findById(habitPlanId);
-  }
 
-  async getHabitPlansByHabitId(habitId: string){
-    return this.habitPlanModel.find({habitId});
+  async getAllHabitTracking(userId: string, planId: string, weeklyPlan: Map<DaysOfWeek, HabitDailyPlan[]>){
+    const daysToHabitTracking = new Map<DaysOfWeek, DailyPlan[]>();
+    const planTracking = await this.habitTrackingService.getAllHabitTrackingForPlan(userId, planId);
+
+    if(!planTracking) {
+      this.logger.debug(`Do not found any tracking for this plan`);
+      return null;
+    }
+    for(const [day, habitDailyPlan] of weeklyPlan ){
+      habitDailyPlan.forEach((habit: HabitDailyPlan) => {
+        if (!daysToHabitTracking.has(day)) {
+          daysToHabitTracking.set(day, []);
+        }
+        const dailyPlan = planTracking.get(habit.data.toString());
+        if(dailyPlan) {
+          daysToHabitTracking.get(day).push(dailyPlan);
+        }
+      });
+    }
+    return daysToHabitTracking;
   }
 
 

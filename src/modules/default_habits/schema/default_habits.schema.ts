@@ -1,7 +1,7 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { HydratedDocument, Types } from "mongoose";
 import { v4 as uuidv4 } from 'uuid';
-import { HabitType, TargetUnit } from "../utils/habit.constant";
+import { HabitActionType, HabitType, TargetUnit } from "../utils/habit.constant";
 
 export type HabitsDocument = HydratedDocument<DefaultHabits>
 
@@ -14,7 +14,7 @@ export class DefaultHabits {
   name: string;
 
   @Prop()
-  type: HabitType;
+  type: HabitActionType;
 
   @Prop({default: 0})
   defaultScore: number;

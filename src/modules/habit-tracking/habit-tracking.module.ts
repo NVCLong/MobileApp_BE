@@ -5,10 +5,11 @@ import { HabitTracking, HabitTrackingSchema } from "./schema/habit.tracking.sche
 import { MongooseModule } from "@nestjs/mongoose";
 import { UserModule } from "../user/user.module";
 import { DefaultHabitsModule } from "../default_habits/default_habits.module";
+import { Default_habitsSchema, DefaultHabits } from "../default_habits/schema/default_habits.schema";
 
 @Module({
   imports: [
-    MongooseModule.forFeature([{ name: HabitTracking.name, schema: HabitTrackingSchema }]),
+    MongooseModule.forFeature([{ name: HabitTracking.name, schema: HabitTrackingSchema }, {name: DefaultHabits.name, schema: Default_habitsSchema}]),
     forwardRef(()=> UserModule),
     DefaultHabitsModule
   ],
