@@ -12,7 +12,7 @@ export class HabitTracking {
 
   _id: Types.ObjectId;
 
-  @Prop({ type: MongooseSchema.Types.ObjectId, required: true })
+  @Prop({ type: MongooseSchema.Types.ObjectId, ref: DefaultHabits.name,  required: true })
   habitId : MongooseSchema.Types.ObjectId;
 
   @Prop({type: Types.ObjectId,required: true})
@@ -20,6 +20,9 @@ export class HabitTracking {
 
   @Prop({ required: true, default: 0 }) // Hexadecimal string for 64-bit bitmask
   progress: number; //progress in 63 days max
+
+  @Prop({ required: true })
+  planId: Types.ObjectId;
 
   // @Prop({required: false})
   // lastCompleted?: number; // timestamp

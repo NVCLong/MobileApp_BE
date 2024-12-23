@@ -80,13 +80,24 @@ export class UsersController {
     }
   }
 
-  @Get('/createHabitPlan/:id')
+  @Post('/createHabitPlan/:id')
   async createHabitPlan(@Param('id') id: string): Promise<any> {
     try{
       this.logger.log("Receive getting default habit");
       return await this.userService.createHabitPlanByUserInfo(id);
     }catch (e){
       this.logger.error("Error getting default habit");
+      throw e;
+    }
+  }
+
+  @Get('/habitPlan/:id')
+  async getHabitPlan(@Param('id') userId: string): Promise<any> {
+    try{
+      this.logger.log("Receive getting default habit");
+      return await this.userService.getLastPlan(userId);
+    }catch(e){
+      this.logger.error("Error getting habit plan");
       throw e;
     }
   }

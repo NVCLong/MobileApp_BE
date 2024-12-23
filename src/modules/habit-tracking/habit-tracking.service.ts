@@ -18,6 +18,9 @@ import { CreateHabitTrackingDto } from "./dto/create.habitTracking.dto";
 import { UpdateHabitTrackingDto } from "./dto/update.habitTracking.dto";
 import * as process from "node:process";
 import { UpdateStreakDTO } from "../user/dtos/updateStreak.dto";
+import { DefaultHabits, HabitsDocument } from "../default_habits/schema/default_habits.schema";
+import { plainToInstance } from "class-transformer";
+import { DailyPlan } from "../user/dtos/get-habit-plan.response.dto";
 
 
 @Injectable()
@@ -25,6 +28,7 @@ export class HabitTrackingService {
   private readonly logger = new Logger(HabitTrackingService.name);
   constructor(
     @InjectModel(HabitTracking.name) private habitTrackingModel: Model<HabitTrackingDocument>,
+    @InjectModel(DefaultHabits.name) private defaultHabitModel: Model<HabitsDocument>,
     @Inject(forwardRef(() => UserService))
     private readonly userService: UserService,
     private readonly defaultHabitsService: Default_HabitsService,
@@ -212,13 +216,47 @@ export class HabitTrackingService {
   }
 
   async createHabitTracking(createDto: CreateHabitTrackingDto): Promise<HabitTracking> {
-    const { userId, habitId, progress } = createDto;
+    const { userId, habitId, progress, planId } = createDto;
     const habit = await this.habitTrackingModel.create({
       userId,
       habitId,
-      progress
+      progress,
+      planId
     })
     return habit;
+  }
+
+
+  async getAllHabitTrackingForPlan(userId: string, planId: string) {
+    if(!userId || !planId){
+      return null;
+    }
+    const allHabitTrackings = await this.habitTrackingModel.find({
+      userId: userId,
+      planId : planId
+    }).exec();
+
+    const habitIds = allHabitTrackings.map((habitTracking) => { return habitTracking.habitId});
+    const relatedHabits = await this.defaultHabitModel.find({
+      _id: {$in: habitIds},
+    }).exec();
+    const trackingIdToDailyPlan = new Map<string, DailyPlan>();
+    const result = allHabitTrackings.map((tracking) => {
+      const habit = relatedHabits.find((habit) => habit._id.toString() === tracking.habitId.toString());
+      const dailyPlan : DailyPlan = {
+        trackingId: tracking._id.toString(),
+        habitName: habit.name,
+        habitType: habit.type,
+        defaultScore: habit.defaultScore,
+        description: habit.description,
+        targetUnit: habit.targetUnit,
+        progress: tracking.progress,
+        goal: habit.goal,
+      }
+      trackingIdToDailyPlan.set(tracking._id.toString(), dailyPlan);
+      });
+
+    return trackingIdToDailyPlan;
   }
 
   async updateUserStreak(
