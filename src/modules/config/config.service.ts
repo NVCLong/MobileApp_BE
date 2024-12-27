@@ -3,8 +3,10 @@ import { InjectModel } from "@nestjs/mongoose";
 import { Configs } from "./schema/config.schema";
 import { Model, set } from "mongoose";
 import { TracingLogger } from "../tracing-logger/tracing-logger.service";
-import { ValueDataType } from "./config.constant";
+import { iconConfig, ignoreSettingFields, ValueDataType } from "./config.constant";
 import { UpdateConfigsRequest } from "./dtos/updateConfigsRequest";
+import { UpdateIconConfigRequest } from "./dtos/update-icon-config.request.dto";
+import { FieldOptions, Options } from "./dtos/field-options-response.dto";
 
 @Injectable()
 export class ConfigApplyService{
@@ -80,6 +82,46 @@ export class ConfigApplyService{
   }
 
   async getConfigs(){
-    return this.configsModel.find();
+    const allSettings = await this.configsModel.find();
+    const returnSettings = allSettings.filter(setting => !ignoreSettingFields.includes(setting.configName));
+    const response = [];
+    const iconConfigs = allSettings.find(setting => setting.configName === iconConfig);
+    returnSettings.forEach((setting) =>{
+      const {configName, configValue} = setting;
+      const values = [];
+      if (Array.isArray(configValue)) {
+        configValue.forEach(setting => {
+          const icon = iconConfigs.configValue[setting.trim()];
+          if(icon) {
+            this.logger.debug(`Setting value for ${setting} with icon ${icon}`);
+            values.push({ optionName: setting.trim(), icon } as Options)
+          }else {
+            const defaultIcon = iconConfigs.configValue["DEFAULT"];
+            this.logger.debug(`Setting value for ${setting} with default icon `);
+            values.push({ optionName: setting.trim(), icon: defaultIcon });
+          }
+        })
+      }
+      response.push({configName: configName, configValue: values} as FieldOptions)
+    })
+
+    return response;
+  }
+
+
+  async saveIconConfig(req: UpdateIconConfigRequest){
+    if(req.settingValues.length === 0 || !req.settingName){
+      throw  new BadRequestException("Missing Config fields");
+    }
+
+    const mapFieldNameToIcon = new Map<string, string>();
+
+    req.settingValues.forEach((item) =>{
+      this.logger.debug(`Setting icon ${item.icon} for ${item.fieldName}`);
+      mapFieldNameToIcon.set(item.fieldName, item.icon);
+    })
+
+    const newConfig = new this.configsModel({configName: req.settingName, configValue: mapFieldNameToIcon});
+    return newConfig.save();
   }
 }

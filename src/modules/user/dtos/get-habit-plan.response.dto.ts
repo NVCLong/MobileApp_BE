@@ -20,9 +20,14 @@ export class DailyPlan {
   goal: number;
   targetUnit: TargetUnit;
   progress: number;
+  icon?: string;
 }
 
 export class GetHabitPlanResponse {
+
+  @Expose()
+  planId: string;
+
   @Expose()
   startDate: string;
 

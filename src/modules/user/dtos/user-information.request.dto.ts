@@ -4,11 +4,11 @@ import { Hobby, Sport, UserSupportWorkField } from "../utils/user.constant";
 export class UserInfoRequest {
   @IsArray()
   @IsNotEmpty()
-  userWorkFields : UserSupportWorkField[];
+  WorkFields : UserSupportWorkField[];
 
   @IsArray()
   @IsNotEmpty()
-  userHobbies : Hobby[];
+  Hobbies : Hobby[];
 
   @IsNotEmpty()
   @IsNotEmpty()
@@ -16,7 +16,7 @@ export class UserInfoRequest {
 
   @IsArray()
   @IsOptional()
-  favSport?: Sport[];
+  SportFields?: Sport[];
 
 
   @IsNumber()

@@ -21,6 +21,8 @@ import { UpdateStreakDTO } from "../user/dtos/updateStreak.dto";
 import { DefaultHabits, HabitsDocument } from "../default_habits/schema/default_habits.schema";
 import { plainToInstance } from "class-transformer";
 import { DailyPlan } from "../user/dtos/get-habit-plan.response.dto";
+import { Configs } from "../config/schema/config.schema";
+import { ConfigName } from "../config/config.constant";
 
 
 @Injectable()
@@ -29,6 +31,7 @@ export class HabitTrackingService {
   constructor(
     @InjectModel(HabitTracking.name) private habitTrackingModel: Model<HabitTrackingDocument>,
     @InjectModel(DefaultHabits.name) private defaultHabitModel: Model<HabitsDocument>,
+    @InjectModel(Configs.name) private readonly configsModel: Model<Configs>,
     @Inject(forwardRef(() => UserService))
     private readonly userService: UserService,
     private readonly defaultHabitsService: Default_HabitsService,
@@ -235,7 +238,7 @@ export class HabitTrackingService {
       userId: userId,
       planId : planId
     }).exec();
-
+    const defaultHabitIcons = await this.configsModel.findOne({configName : ConfigName.HABITICONS});
     const habitIds = allHabitTrackings.map((habitTracking) => { return habitTracking.habitId});
     const relatedHabits = await this.defaultHabitModel.find({
       _id: {$in: habitIds},
@@ -252,6 +255,7 @@ export class HabitTrackingService {
         targetUnit: habit.targetUnit,
         progress: tracking.progress,
         goal: habit.goal,
+        icon: defaultHabitIcons.configValue[habit.name.toUpperCase()] ?? defaultHabitIcons.configValue["DEFAULT"],
       }
       trackingIdToDailyPlan.set(tracking._id.toString(), dailyPlan);
       });

@@ -64,6 +64,15 @@ export class TasksService implements OnModuleInit {
         this.syncWeather.bind(this),
       ),
     );
+
+    // Auto create Plan for new User when they create new account
+    this.addRule(
+      new TasksRule(
+        'Auto Create Plan',
+        '* * * * *', // every one minute,
+        this.autoGeneratePlan.bind(this),
+      )
+    )
   }
 
   onModuleInit() {
@@ -86,6 +95,12 @@ export class TasksService implements OnModuleInit {
     this.schedulerRegistry.addCronJob(rule.ruleName, job);
     job.start();
     this.logger.log(`Scheduled rule: ${rule.ruleName} with cron: ${rule.cronExpression}`);
+  }
+
+
+  async autoGeneratePlan(){
+    this.logger.debug(`Auto Generate Plan for new user`);
+    await this.userService.autoCreatePlanForNewUser();
   }
 
   async autoResetLoginCode(){
