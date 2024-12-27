@@ -6,3 +6,13 @@ export enum ValueDataType {
   BOOLEAN = "boolean",
   ARRAY = "array",
 }
+
+export const ignoreSettingFields = ["maximumDefaultGenerateHabit", "Icons"]
+
+export const iconConfig = "Icons";
+export const habitIconConfigs = "habitIconConfigs";
+
+export enum ConfigName {
+  ICONS= "Icons",
+  HABITICONS = "HabitIcons",
+}

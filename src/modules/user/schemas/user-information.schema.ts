@@ -1,6 +1,6 @@
 import mongoose, { HydratedDocument, Types } from "mongoose";
 import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
-import { Hobby, UserSupportWorkField } from "../utils/user.constant";
+import { Hobby, Sport, UserSupportWorkField } from "../utils/user.constant";
 import { User } from "./user.schema";
 
 export type UserInformationSchema= HydratedDocument<UserInformation>
@@ -15,7 +15,7 @@ export class UserInformation {
   @Prop({ required: true })
   timeUsingPhone: number;
 
-  @Prop({ required: false, type: [String], enum: UserSupportWorkField })
+  @Prop({ required: false, type: [String], enum: Sport })
   favSport: string;
 
   @Prop({ required: false })

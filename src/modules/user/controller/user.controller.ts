@@ -48,8 +48,8 @@ export class UsersController {
   async submitEntryForm(@Body() request: UserInfoRequest, @Param('id') userId: string): Promise<any> {
     try{
       this.logger.log("Receive submit user request");
-      const {userHobbies, userWorkFields, timeUsingPhone}= request;
-      if(!userHobbies || !userWorkFields || timeUsingPhone < 0 || !userId){
+      const {Hobbies, WorkFields, timeUsingPhone}= request;
+      if(!Hobbies || !WorkFields || timeUsingPhone < 0 || !userId){
         throw new  BadRequestException("Missing one in these fields hobbies, work fields, time using phones");
       }
       return this.userService.updateUserInformation(request, userId);

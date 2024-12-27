@@ -103,30 +103,29 @@ export class UserService {
      const sportSupportTypes= Object.values(Sport).filter((value)=> typeof value === "string");
      const workFieldsTypes = Object.values(UserSupportWorkField).filter((value)=> typeof value === 'string')
      const hobbiesTypes = Object.values(Hobby).filter((value)=> typeof value === 'string');
-     const checkInputFavSport = request.favSport?.every((sport) =>{
+     const checkInputFavSport = request.SportFields?.every((sport) =>{
        return sportSupportTypes.includes(sport);
      })
-    const checkInputWorkFields = request.userWorkFields?.every((value)=>{
+    const checkInputWorkFields = request.WorkFields?.every((value)=>{
       return workFieldsTypes.includes(value);
     })
-    const checkInputHobbies = request.userHobbies?.every((value)=>{
+    const checkInputHobbies = request.Hobbies?.every((value)=>{
       return hobbiesTypes.includes(value);
     })
     if(!checkInputWorkFields || !checkInputHobbies){
       throw new BadRequestException("Invalid type support");
     }
-    if(request.favSport && !checkInputFavSport){
+    if(request.SportFields && !checkInputFavSport){
       throw new BadRequestException("Invalid type support");
     }
     const userInformation = await this.userInformationModel.findOne({user: userId})
     const updateData: any = {};
 
-    if (request.favSport) updateData.favSport = request.favSport;
+    if (request.SportFields) updateData.favSport = request.SportFields;
     if (request.timeUsingPhone) updateData.timeUsingPhone = request.timeUsingPhone;
     if (request.exerciseTimePerWeek) updateData.exerciseTimePerWeek = request.exerciseTimePerWeek;
-    if (request.userHobbies) updateData.hobbies = request.userHobbies;
-    if (request.userWorkFields) updateData.work = request.userWorkFields;
-
+    if (request.Hobbies) updateData.hobbies = request.Hobbies;
+    if (request.WorkFields) updateData.work = request.WorkFields;
     if (userInformation) {
       return this.userInformationModel.updateOne({ user: userId }, { $set: updateData });
     }
@@ -134,11 +133,11 @@ export class UserService {
        user: userId,
        userEmail: user.userEmail,
        userName: user.userName,
-       favSport: request.favSport || [],
+       favSport: request.SportFields || [],
        timeUsingPhone: request.timeUsingPhone,
        exerciseTimePerWeek: request.exerciseTimePerWeek || 0,
-       work: request.userWorkFields || [],
-       hobbies: request.userHobbies || []
+       work: request.WorkFields || [],
+       hobbies: request.Hobbies || []
      });
   }
 
@@ -301,6 +300,26 @@ export class UserService {
     }
   }
 
+  async autoCreatePlanForNewUser(){
+    const allUsers = await this.userModel.find();
+    const plans = await this.habitPlanModel.find();
+    const forms = await  this.userInformationModel.find();
+    const userIdHavePlan = [...new Set(plans.map(plan => plan.userId.toString()))];
+    const userFilledForm = [... new Set(forms.map(form => form.user._id.toString()))];
+
+    const newUser = allUsers.filter((user) => !userIdHavePlan.includes(user._id.toString()));
+    const newUserWithForm = newUser.filter((user) => userFilledForm.includes(user._id.toString()));
+    if(newUserWithForm.length === 0){
+      this.logger.debug("Not found new User with form")
+      return;
+    }
+    this.logger.debug(`Found ${newUserWithForm.length} user to create new plan`);
+    for (const user of newUserWithForm) {
+      this.logger.log(`Create Plan for new user have id ${user._id.toString()}`)
+      await this.createHabitPlanByUserInfo(user._id.toString());
+    }
+  }
+
   async processRevokeCode(){
     try{
       await this.userModel.updateMany({ loginCode: { $ne: "" } }, { loginCode: null });
@@ -373,6 +392,7 @@ export class UserService {
 
 
     return plainToInstance(GetHabitPlanResponse, {
+      planId: dailyPlan._id.toString(),
       startDate: dailyPlan.startDate.toISOString().split('T')[0],
       endDate: dailyPlan.endDate.toISOString().split('T')[0],
       dailyPlans: plan

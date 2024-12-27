@@ -40,5 +40,4 @@ export class DefaultHabitsController {
       throw new Error(err);
     }
   }
-
 }
