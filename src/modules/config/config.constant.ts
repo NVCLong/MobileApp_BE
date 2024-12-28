@@ -7,7 +7,7 @@ export enum ValueDataType {
   ARRAY = "array",
 }
 
-export const ignoreSettingFields = ["maximumDefaultGenerateHabit", "Icons"]
+export const ignoreSettingFields = ["maximumDefaultGenerateHabit", "Icons", "HabitIcons"]
 
 export const iconConfig = "Icons";
 export const habitIconConfigs = "habitIconConfigs";

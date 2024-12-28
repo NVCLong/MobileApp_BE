@@ -83,7 +83,8 @@ export class ConfigApplyService{
 
   async getConfigs(){
     const allSettings = await this.configsModel.find();
-    const returnSettings = allSettings.filter(setting => !ignoreSettingFields.includes(setting.configName));
+    const ignoreConfigs = await  this.configsModel.findOne({configName: "IgnoreConfigs"});
+    const returnSettings = allSettings.filter(setting => !ignoreConfigs.configValue.includes(setting.configName));
     const response = [];
     const iconConfigs = allSettings.find(setting => setting.configName === iconConfig);
     returnSettings.forEach((setting) =>{
