@@ -64,7 +64,7 @@ export class UserService {
       })
     }
     const res= await this.userModel.create({
-      userName: request.name,
+      userName: request.name ?? "",
       userEmail: request.email,
       age: request.age,
       loginCode: randomCode.toString(),
@@ -422,6 +422,9 @@ export class UserService {
     return daysToHabitTracking;
   }
 
+  async updateCurrentPlan(planId: string ){
+
+  }
 
   async updateUserStreak(userId: Types.ObjectId, currentStreak: number, longestStreak: number) {
     return this.userModel.updateOne({ _id: userId }, { currentStreak, longestStreak });
