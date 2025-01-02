@@ -47,11 +47,11 @@ export class UserService {
       this.logger.debug("[CreateUser] Do not have enough information");
       throw new BadRequestException("Missing required fields")
     }
-    const result = await  this.emailValidationHelper.validateEmail(email);
-    if(!result){
-      this.logger.debug("[CreateUser] Email validation failed");
-      throw new BadRequestException("Email validation failed");
-    }
+    // const result = await  this.emailValidationHelper.validateEmail(email);
+    // if(!result){
+    //   this.logger.debug("[CreateUser] Email validation failed");
+    //   throw new BadRequestException("Email validation failed");
+    // }
     const user = await this.checkExistEmail(email);
     const randomCode = Math.floor(100000 + Math.random() * 900000);
     if(user){
